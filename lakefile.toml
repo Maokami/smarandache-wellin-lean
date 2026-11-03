@@ -1,0 +1,16 @@
+name = "SmarandacheWellin"
+defaultTargets = ["SmarandacheWellin"]
+
+[leanOptions]
+autoImplicit = false
+pp.unicode.fun = true
+
+# ctic-lean 과 같은 Mathlib 버전을 고정한다. .lake/packages 는 APFS clone 으로 가져온다 (README 참고).
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
+
+[[lean_lib]]
+name = "SmarandacheWellin"
+globs = ["SmarandacheWellin", "SmarandacheWellin.+"]
