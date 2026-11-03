@@ -86,6 +86,7 @@ docs/
   research-plan.md  전략 비교, 가장 약한 고리 규칙, 작업 방식
   lemma-ledger.md   보조명제 장부 (명제·상태·가정·역할·실패 이유·근거)
   references.md     참고문헌
+  experiments/      계산 실험 로그 (날짜, 명령, 출력)
 scripts/
   sw_mod.py         Wₙ mod m 궤도 계산 (Wₙ 자체는 만들지 않는다)
 ```
