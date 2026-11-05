@@ -1,4 +1,4 @@
-import SmarandacheWellin.Avoid
+import SmarandacheWellin.Interval
 
 /-!
 # 공리 감사
@@ -47,3 +47,22 @@ import SmarandacheWellin.Avoid
 #print axioms SW.block_dvd_of_cover
 #print axioms SW.avoid_two_of_block
 #print axioms SW.three_dvd_B_iff
+#print axioms SW.block_dvd_or_succ_of_cover
+#print axioms SW.avoid_two_of_block_succ
+#print axioms SW.not_dvd_nth_prime_of_le
+#print axioms SW.not_three_dvd_pow_add_one
+#print axioms SW.not_three_dvd_B_of_modEq
+#print axioms SW.avoid_three_of_triples
+#print axioms SW.dvd_pow_add_one_of_dvd_B
+#print axioms SW.not_dvd_pow_add_one_both
+#print axioms SW.dvd_pow_add_one_of_cover
+#print axioms SW.avoid_two_of_digit_triples
+
+-- Interval
+#print axioms SW.digitsLen_eq
+#print axioms SW.lt_of_nth_prime_lt
+#print axioms SW.sameClassTriples3_of_intervalTriples
+#print axioms SW.digit_triple_of_interval
+#print axioms SW.digitTriples_of_intervalTriples
+#print axioms SW.avoid_two_of_interval_triples
+#print axioms SW.avoid_three_of_interval_triples

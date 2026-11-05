@@ -47,6 +47,13 @@ n = 1, 2, 4, 128, 174, 342, 435, 1429
 | Q1, \|S\| = 1: 연속한 세 항 중 하나는 q ∤; q ∤ Wₙ 인 n 무한 | `not_dvd_of_three_consecutive`, `exists_not_dvd` | `Avoid.lean` |
 | Q1, \|S\| = 2 의 환원: (q ∤ Bₙ ∧ r ∤ Bₙ 인 n 무한) ⇒ (q ∤ Wₙ ∧ r ∤ Wₙ 인 n 무한) | `block_dvd_of_cover`, `avoid_two_of_block` | `Avoid.lean` |
 | 3 ∣ Bₙ ↔ 3 ∣ pₙ₊₁ + pₙ₊₂ | `three_dvd_B_iff` | `Avoid.lean` |
+| 덮개 아래서 q ∣ Bₙ ∨ q ∣ Bₙ₊₁; (q ∤ Bₙ ∧ q ∤ Bₙ₊₁ 인 n 무한) ⇒ Q1({q, r}) | `block_dvd_or_succ_of_cover`, `avoid_two_of_block_succ` | `Avoid.lean` |
+| H3 (mod 3 같은 류의 연속 소수 세 쌍 무한) ⇒ Q1({3, r}) | `not_three_dvd_B_of_modEq`, `avoid_three_of_triples` | `Avoid.lean` |
+| 같은 류 쌍에서 q ∣ Bₙ ⇒ q ∣ 10^d + 1; 어떤 소수도 10^d + 1, 10^{d+1} + 1 을 둘 다 못 나눔 | `dvd_pow_add_one_of_dvd_B`, `not_dvd_pow_add_one_both` | `Avoid.lean` |
+| Hd(q) (두 자릿수 구간의 같은 류 세 쌍) ⇒ Q1({q, r}) | `dvd_pow_add_one_of_cover`, `avoid_two_of_digit_triples` | `Avoid.lean` |
+| 10^e ≤ n < 10^{e+1} ⇒ n 은 e+1 자리 | `digitsLen_eq` | `Interval.lean` |
+| IT(q) (큰 x 마다 [x, 3x] 에 같은 류의 연속 소수 세 개) ⇒ Hd(q), IT(3) ⇒ H3 | `digitTriples_of_intervalTriples`, `sameClassTriples3_of_intervalTriples` | `Interval.lean` |
+| IT(q) ⇒ Q1({q, r}) | `avoid_two_of_interval_triples`, `avoid_three_of_interval_triples` | `Interval.lean` |
 
 미해결 보조명제와 그 상태는 `docs/lemma-ledger.md` 에 기록한다.
 
@@ -85,15 +92,18 @@ SmarandacheWellin/
   Defs.lean         정의: digitsLen, W, SWInfinitude
   Basic.lean        초기값, 증가, 나머지 점화식, 끝자리, 목표 명제의 동치 서술
   Congruence.lean   mod 3·9 항등식, 연속 두 항 비가분 보조정리, 10 과 서로소
-  Avoid.lean        유한 소수 집합 회피 (Q1): |S| = 1 증명, |S| = 2 는 연속 소수 쌍의 블록 조건으로 환원
+  Avoid.lean        유한 소수 집합 회피 (Q1): |S| = 1 증명, |S| = 2 는 Shiu 형 연속 소수 가정 (H3, Hd(q)) 으로 환원
+  Interval.lean     구간 판 Shiu 가정 IT(q) 에서 H3, Hd(q) 를 유도 (자릿수 보조정리)
   Audit.lean        #print axioms
 docs/
   research-plan.md  전략 비교, 가장 약한 고리 규칙, 작업 방식
   lemma-ledger.md   보조명제 장부 (명제·상태·가정·역할·실패 이유·근거)
   references.md     참고문헌
   experiments/      계산 실험 로그 (날짜, 명령, 출력)
+  literature/       문헌 대조 보고서 (원문 인용, 판정, 미확인 사항)
 scripts/
   sw_mod.py         Wₙ mod m 궤도 계산 (Wₙ 자체는 만들지 않는다)
   sw_avoid.py       유한 집합 회피 비율과 블록 조건 비율 (Q1, H1)
+  sw_triples.py     연속 소수 가정 H3, HB(q), Hd(q) 의 비율·개수
   sw_heuristic.py   보정 확률 모형 E(a, b) 와 관측 비교
 ```
