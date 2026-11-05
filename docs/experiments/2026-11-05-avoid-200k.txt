@@ -1,0 +1,21 @@
+# 날짜: 2026-11-05
+# 명령: python3 -I scripts/sw_avoid.py --n 200000
+# 해석: (1) 유한 집합 회피 비율은 독립 모형과 0.3% 이내 일치. (2) 블록 조건은 q=3 이 끼면 독립 예측보다 낮다:
+#       연속 소수가 mod 3 에서 다른 류를 선호하기 때문 (같은 류 비율 0.42). (3) 참조. 증명 아님.
+# (1) S 회피 비율, 1 ≤ n ≤ 200000
+S=[3]: avoid=0.6672  independent≈0.6667  (count=133437)
+S=[3, 7]: avoid=0.5727  independent≈0.5714  (count=114546)
+S=[3, 7, 11]: avoid=0.5206  independent≈0.5195  (count=104123)
+S=[3, 7, 11, 13]: avoid=0.4808  independent≈0.4795  (count=96164)
+S=[3, 7, 11, 13, 17]: avoid=0.4533  independent≈0.4513  (count=90670)
+S=[3, 7, 11, 13, 17, 19]: avoid=0.4297  independent≈0.4276  (count=85939)
+S=[3, 7, 11, 13, 17, 19, 23]: avoid=0.4108  independent≈0.4090  (count=82157)
+# (2) 블록 조건 비율: q∤B_n ∧ r∤B_n, 0 ≤ n < 200000
+(q,r)=(3,7): block-avoid=0.3418  independent≈0.5714  (count=68352)
+(q,r)=(3,11): block-avoid=0.4072  independent≈0.6061  (count=81437)
+(q,r)=(3,13): block-avoid=0.3862  independent≈0.6154  (count=77236)
+(q,r)=(7,11): block-avoid=0.7687  independent≈0.7792  (count=153737)
+(q,r)=(7,13): block-avoid=0.7441  independent≈0.7912  (count=148830)
+(q,r)=(11,13): block-avoid=0.8595  independent≈0.8392  (count=171899)
+# (3) mod 3: 연속 소수가 같은 류 (3 ∤ p_{n+1}+p_{n+2}) 인 비율, n ≥ 2
+same-class-mod-3=0.4243  (independent≈0.5; 연속 소수는 다른 류를 선호한다고 알려져 있음)

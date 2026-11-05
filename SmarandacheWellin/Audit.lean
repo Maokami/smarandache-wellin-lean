@@ -1,4 +1,4 @@
-import SmarandacheWellin.Congruence
+import SmarandacheWellin.Avoid
 
 /-!
 # 공리 감사
@@ -37,3 +37,13 @@ import SmarandacheWellin.Congruence
 #print axioms SW.seven_le_nth_prime
 #print axioms SW.nth_prime_coprime_ten
 #print axioms SW.coprime_ten_of_three_le
+
+-- Avoid
+#print axioms SW.lt_nth_prime
+#print axioms SW.W_add_two
+#print axioms SW.dvd_add_two_iff
+#print axioms SW.not_dvd_of_three_consecutive
+#print axioms SW.exists_not_dvd
+#print axioms SW.block_dvd_of_cover
+#print axioms SW.avoid_two_of_block
+#print axioms SW.three_dvd_B_iff

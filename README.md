@@ -43,6 +43,10 @@ n = 1, 2, 4, 128, 174, 342, 435, 1429
 | 10 ≡ 1 (mod m) ⇒ Wₙ ≡ Σ pₖ (mod m); m = 3, 9 | `W_modEq_sum_of_ten_modEq_one`, `W_modEq_sum_three`, `W_modEq_sum_nine` | `Congruence.lean` |
 | 소수 q ∣ Wₙ, q ≠ pₙ₊₁ ⇒ q ∤ Wₙ₊₁ | `not_dvd_succ_of_dvd` | `Congruence.lean` |
 | n ≥ 4 ⇒ gcd(Wₙ, 10) = 1 | `coprime_ten_of_three_le` | `Congruence.lean` |
+| 두 칸 점화식과 블록 Bₙ: q ∣ Wₙ ⇒ (q ∣ Wₙ₊₂ ↔ q ∣ Bₙ) | `W_add_two`, `dvd_add_two_iff` | `Avoid.lean` |
+| Q1, \|S\| = 1: 연속한 세 항 중 하나는 q ∤; q ∤ Wₙ 인 n 무한 | `not_dvd_of_three_consecutive`, `exists_not_dvd` | `Avoid.lean` |
+| Q1, \|S\| = 2 의 환원: (q ∤ Bₙ ∧ r ∤ Bₙ 인 n 무한) ⇒ (q ∤ Wₙ ∧ r ∤ Wₙ 인 n 무한) | `block_dvd_of_cover`, `avoid_two_of_block` | `Avoid.lean` |
+| 3 ∣ Bₙ ↔ 3 ∣ pₙ₊₁ + pₙ₊₂ | `three_dvd_B_iff` | `Avoid.lean` |
 
 미해결 보조명제와 그 상태는 `docs/lemma-ledger.md` 에 기록한다.
 
@@ -81,6 +85,7 @@ SmarandacheWellin/
   Defs.lean         정의: digitsLen, W, SWInfinitude
   Basic.lean        초기값, 증가, 나머지 점화식, 끝자리, 목표 명제의 동치 서술
   Congruence.lean   mod 3·9 항등식, 연속 두 항 비가분 보조정리, 10 과 서로소
+  Avoid.lean        유한 소수 집합 회피 (Q1): |S| = 1 증명, |S| = 2 는 연속 소수 쌍의 블록 조건으로 환원
   Audit.lean        #print axioms
 docs/
   research-plan.md  전략 비교, 가장 약한 고리 규칙, 작업 방식
@@ -89,4 +94,6 @@ docs/
   experiments/      계산 실험 로그 (날짜, 명령, 출력)
 scripts/
   sw_mod.py         Wₙ mod m 궤도 계산 (Wₙ 자체는 만들지 않는다)
+  sw_avoid.py       유한 집합 회피 비율과 블록 조건 비율 (Q1, H1)
+  sw_heuristic.py   보정 확률 모형 E(a, b) 와 관측 비교
 ```
