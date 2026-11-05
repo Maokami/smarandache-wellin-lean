@@ -11,6 +11,8 @@ import SmarandacheWellin.Interval
 -- Basic
 #print axioms SW.nth_prime_prime
 #print axioms SW.digitsLen_pos
+#print axioms SW.W_zero
+#print axioms SW.W_succ
 #print axioms SW.W_one
 #print axioms SW.W_two
 #print axioms SW.W_three
