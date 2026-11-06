@@ -14,3 +14,10 @@ rev = "v4.35.0"
 [[lean_lib]]
 name = "SmarandacheWellin"
 globs = ["SmarandacheWellin", "SmarandacheWellin.+"]
+
+# leanblueprint checkdecls: 블루프린트에 적힌 Lean 이름이 존재하는지 검사하는 작은 실행 파일 (Mathlib 과 무관).
+# 사용자 승인 (2026-11-06) 으로 추가. scripts/check_blueprint.py 의 역방향 검사와 함께 쓴다.
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+rev = "3d425859e73fcfbef85b9638c2a91708ef4a22d4"

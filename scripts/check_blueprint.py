@@ -11,6 +11,9 @@
 
 사용:  python3 -I scripts/check_blueprint.py           # (2)–(4) 만, 즉시
        python3 -I scripts/check_blueprint.py --lean    # (1) 까지
+       python3 -I scripts/check_blueprint.py --write-decls PATH
+                                                       # \lean 이름 목록을 PATH 에 써서 `lake exe checkdecls PATH`
+                                                       # (공식 checkdecls) 로 넘긴다. plasTeX 없이 CI 에서 쓴다.
 종료 코드 0 = 모두 통과.
 """
 import argparse
@@ -46,6 +49,7 @@ def blueprint_names(tex: str) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lean", action="store_true", help="lake env lean 으로 존재 확인 (느림)")
+    ap.add_argument("--write-decls", metavar="PATH", help="\\lean 이름을 한 줄에 하나씩 PATH 에 쓴다")
     args = ap.parse_args()
     raw = (BP / "src" / "content.tex").read_text(encoding="utf-8")
     tex = re.sub(r"(?<!\\)%.*", "", raw)  # 주석 제거
@@ -77,6 +81,10 @@ def main() -> int:
             print(f"[4] \\leanok 인데 \\lean 없음: {env} {label.group(1) if label else '?'}"); fails += 1
 
     print(f"블루프린트 이름 {len(bp)} 개, 소스 선언 {len(src)} 개, 감사 {len(audit)} 개")
+
+    if args.write_decls:
+        pathlib.Path(args.write_decls).write_text("".join(n + "\n" for n in bp), encoding="utf-8")
+        print(f"{args.write_decls} 에 {len(bp)} 개 이름을 씀")
 
     if args.lean:
         decls = (BP / "lean_decls").read_text(encoding="utf-8").split()

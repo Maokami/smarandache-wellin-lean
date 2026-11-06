@@ -1,0 +1,67 @@
+# 기반 CI: AI 없음. 모든 PR (사람·에이전트) 의 독립 검증자다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    name: Lean build and audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      # Mathlib 은 cache get 으로 받는다. 공리 감사는 namespace SW 의 모든 선언에 대해
+      # propext, Classical.choice, Quot.sound 밖의 공리 (sorryAx, native_decide 의 ofReduceBool, 새 axiom) 를 막는다.
+      - name: Build, import check, axiom audit
+        uses: leanprover/lean-action@v1
+        with:
+          build: true
+          mk_all-check: true
+          axiom-audit: true
+          axiom-audit-allow: "propext,Classical.choice,Quot.sound"
+          axiom-audit-root: SW
+
+      - name: Blueprint ↔ Lean ↔ Audit consistency
+        run: python3 -I scripts/check_blueprint.py --write-decls "$RUNNER_TEMP/lean_decls"
+
+      - name: checkdecls (blueprint names exist in Lean)
+        run: lake exe checkdecls "$RUNNER_TEMP/lean_decls"
+
+      # 에이전트 PR (claude/ 브랜치) 은 장부·README·계획·빌드 설정·워크플로를 바꿀 수 없다 (AGENTS.md).
+      - name: Agent PR scope guard
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'claude/')
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git diff --name-only "origin/${BASE_REF}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
+          if grep -nE '^(docs/lemma-ledger\.md|README\.md|docs/research-plan\.md|lakefile\.toml|lake-manifest\.json|lean-toolchain|\.github/)' "$RUNNER_TEMP/changed.txt"; then
+            echo "::error::에이전트 PR 이 보호된 파일을 바꿨다 (AGENTS.md 의 저자·검증자 규칙)."
+            exit 1
+          fi

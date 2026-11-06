@@ -62,19 +62,18 @@ n = 1, 2, 4, 128, 174, 342, 435, 1429
 툴체인은 `lean-toolchain` 에, Mathlib 은 `lakefile.toml` 에 `v4.35.0` 으로 고정되어 있다.
 
 ```sh
-lake build
+lake exe cache get   # Mathlib 의 미리 빌드된 olean. 콜드 빌드는 1 시간 이상 걸린다
+lake build           # Audit.lean 이 모든 정리의 #print axioms 를 출력한다
 ```
 
-**Mathlib 을 새로 받지 말 것.** 같은 버전의 Mathlib 이 빌드된 프로젝트가 있으면 `.lake/packages` 를
-APFS clone(copy-on-write) 으로 가져온다. 추가 디스크를 거의 쓰지 않는다.
+같은 버전의 Mathlib 이 빌드된 프로젝트가 옆에 있으면 `.lake/packages` 를 APFS clone (copy-on-write) 으로
+가져와 디스크를 아낄 수 있다. 작은 의존성 `checkdecls` 는 `lake` 가 직접 받는다.
 
 ```sh
 for p in mathlib Cli plausible LeanSearchClient importGraph proofwidgets aesop Qq batteries; do
   cp -c -R -p ../ctic-lean/.lake/packages/$p .lake/packages/$p
 done
 ```
-
-그런 프로젝트가 없으면 `lake exe cache get` 으로 미리 빌드된 olean 을 받는다.
 
 ## 블루프린트
 
@@ -87,17 +86,45 @@ done
 uv tool install leanblueprint        # graphviz 필요: brew install graphviz
 scripts/blueprint.sh                 # 웹 판 + PDF 판 + 대응 검사 (블루프린트 ↔ 소스 ↔ Audit)
 scripts/blueprint.sh --lean          # 위에 더해 모든 \lean 이름을 lake env lean 으로 확인 (수 분)
+lake exe checkdecls blueprint/lean_decls   # 공식 checkdecls (웹 판을 만든 뒤)
 scripts/blueprint.sh serve           # http://127.0.0.1:8000 , 의존 그래프는 dep_graph_document.html
 ```
 
 산출물 `blueprint/web/`, `blueprint/print/print.pdf`, `blueprint/lean_decls` 는 커밋하지 않는다.
-leanblueprint 의 `checkdecls` 는 외부 Lake 패키지를 의존성에 넣어야 해서 쓰지 않고,
-`scripts/check_blueprint.py` 가 같은 검사와 역방향 검사 (소스의 모든 선언이 블루프린트에 있는가,
-블루프린트의 정리가 모두 감사되는가) 를 한다. 그래프의 색: 초록 = Lean 검증, 파랑 배경 = 의존이 모두 갖춰져
+이름 검사는 두 가지를 함께 쓴다. 공식 `checkdecls` 는 블루프린트의 `\lean` 이름이 Lean 에 있는지 보고,
+`scripts/check_blueprint.py` 는 반대 방향 (소스의 모든 선언이 블루프린트에 있는가, 블루프린트의 정리가 모두
+`Audit.lean` 에서 감사되는가) 을 본다. 그래프의 색: 초록 = Lean 검증, 파랑 배경 = 의존이 모두 갖춰져
 형식화 가능 (문헌 노드는 범위 밖이라 형식화하지 않음), 주황 테두리 = 계획 없음.
 
 장부 (`docs/lemma-ledger.md`) 와의 분담: 블루프린트는 의존 구조와 Lean 대응의 기준이고, 장부는 상태의 세부,
 실패 이유, 계산 근거를 기록한다. 새 정리를 추가하면 `Audit.lean`, 블루프린트, 장부를 함께 고친다.
+
+## 자동화 (GitHub Actions, Continuous AI 실험)
+
+결정 근거는 `docs/tooling/2026-11-06-continuous-ai-survey.md`. 원칙: Lean 커널과 결정적인 CI 가 검증자이고,
+AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGENTS.md` (Claude 는 `CLAUDE.md` 로 읽는다).
+
+| 워크플로 | 단계 | AI | 트리거 | 쓸 수 있는 것 |
+| --- | --- | --- | --- | --- |
+| `ci.yml` | 1 | 없음 | push, PR | 없음. 빌드, `mk_all` 검사, namespace `SW` 전체 공리 감사, 블루프린트 대응, checkdecls, 에이전트 PR 범위 검사 |
+| `blueprint.yml` | 1 | 없음 | push, PR | GitHub Pages (main push 때만) |
+| `claude-review.yml` | 2 | Claude (구독) | PR 열림·Ready | PR 댓글 |
+| `claude-ask.yml` | 2 | Claude (구독) | 댓글의 `@claude` | 댓글. 파일 수정 금지 |
+| `claude-lit-watch.yml` | 2 | Claude (구독) | 매주 월요일, 수동 | `lit-watch` 이슈 하나 |
+| `claude-lemma-hunter.yml` | 3 | Claude (구독) | 수동 (처음에는) | `claude/` 브랜치와 draft PR |
+
+AI 워크플로는 `anthropics/claude-code-action@v1` 과 Claude 구독 토큰을 쓴다. 쓰려면 저장소 소유자가 한 번 설정한다.
+
+```bash
+# 1) Claude GitHub App 설치: https://github.com/apps/claude  (이 저장소만 선택)
+# 2) 구독 토큰을 저장소 secret 으로
+claude setup-token
+gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo Maokami/smarandache-wellin-lean
+```
+
+보조정리 사냥꾼에게 일을 주려면 `lemma-hunt` 라벨 이슈에 형식화할 진술과 블루프린트 라벨을 적고
+Actions 탭에서 "Claude lemma hunter" 를 수동 실행한다. 사냥꾼의 PR 은 draft 로 열리고, 사람이 "Ready for review" 로
+바꾸면 리뷰어가 돈다. main 은 ruleset 으로 보호되어 에이전트가 직접 push 할 수 없다.
 
 ## 검증 기준
 
@@ -119,6 +146,9 @@ SmarandacheWellin/
   Interval.lean     구간 판 Shiu 가정 IT(q) 에서 H3, Hd(q) 를 유도 (자릿수 보조정리)
   Audit.lean        #print axioms
 blueprint/src/      leanblueprint 설계도 (content.tex, 매크로, 설정)
+site/               GitHub Pages 첫 화면 (블루프린트로 가는 링크)
+.github/workflows/   CI, 블루프린트 배포, Claude 워크플로 (위 표)
+AGENTS.md           사람·에이전트 공통 작업 규칙 (CLAUDE.md 가 가져온다)
 docs/
   research-plan.md  전략 비교, 가장 약한 고리 규칙, 작업 방식
   lemma-ledger.md   보조명제 장부 (명제·상태·가정·역할·실패 이유·근거)
