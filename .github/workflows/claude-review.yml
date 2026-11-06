@@ -13,7 +13,8 @@ concurrency:
 
 jobs:
   review:
-    if: github.event.pull_request.draft == false
+    # Dependabot PR 실행에는 Claude secret 이 없다 (Dependabot secret 만 주어짐).
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

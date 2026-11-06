@@ -59,8 +59,10 @@ jobs:
       # 브랜치 이름은 에이전트가 정할 수 있으므로 PR 작성자 (위조 불가) 로도 판단한다.
       # 이 가드는 ci.yml 을 바꾸는 PR 에는 무력하다. 그 경우는 ruleset 의 사람 승인이 막는다.
       - name: Agent PR scope guard
+        # Dependabot 은 .github/ 의 action 고정만 바꾸므로 예외다 (머지에는 여전히 사람 승인이 필요하다).
         if: >-
           github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
           (startsWith(github.head_ref, 'claude/') ||
            github.event.pull_request.user.type == 'Bot' ||
            github.event.pull_request.user.login != github.repository_owner)
