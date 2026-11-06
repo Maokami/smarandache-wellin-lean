@@ -8,11 +8,11 @@
 - 예약: `cron: "37 0 * * *"` = 매일 09:37 KST (정각 혼잡을 피한다).
 - 수동: `workflow_dispatch`. issue 입력을 주면 사용자가 그 이슈의 재시도를 지정한 것으로 본다.
 
-| job | AI | 쓰기 권한 | 하는 일 |
+| job | AI | 워크플로 토큰 쓰기 권한 | 하는 일 |
 | --- | --- | --- | --- |
 | select | 없음 | 없음 | 작업 하나를 고르거나, 고를 것이 없으면 끝난다. 판정할 수 없으면 실패한다 |
 | mark | 없음 | issues | 고른 이슈에 시작 기록 댓글을 남긴다. 실패하면 hunt 는 시작하지 않는다 |
-| hunt | Claude (구독) | 없음 (App 토큰으로 `claude/hunt-*` 브랜치와 draft PR) | 기존 사냥꾼. select 가 검증한 번호와 본문만 작업 파일로 받는다 |
+| hunt | Claude (구독) | `GITHUB_TOKEN` 은 없음. 별도 Claude App 토큰은 contents·PR·issues 쓰기 (+ actions 읽기) 로 `claude/hunt-*` 브랜치 push, draft PR, 이슈 댓글을 한다 | 기존 사냥꾼. select 가 검증한 번호와 본문만 작업 파일로 받는다 |
 
 ## 선택 규칙 (예약 실행)
 
