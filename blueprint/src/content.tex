@@ -6,14 +6,15 @@
 %   \notready     블루프린트를 더 다듬어야 함 (증명 계획이 아직 없음)
 % 아직 증명하지 않은 가정 (H3, IT(q) 등) 은 Lean 에서 `def ... : Prop` 으로 정의만 하고,
 % 조건부 정리의 명시적 가정으로 쓴다. 문헌 정리는 \lean 없이 별도 노드로 둔다.
-% 각 항목 끝의 [B1], [C4] 같은 표시는 docs/lemma-ledger.md 의 ID 다.
+% 항목 제목 끝의 B1, C4 같은 표시는 docs/lemma-ledger.md 의 ID 다.
 
 \chapter{개요}
 
 처음 \(n\) 개 소수를 이어 붙인 수를 \(W_n\) 이라 하자.
 \(W_1 = 2,\ W_2 = 23,\ W_3 = 235,\ W_4 = 2357,\ W_5 = 235711, \dots\)
 목표는 \(W_n\) 이 소수인 \(n\) 이 무한히 많다는 추측 (정리~\ref{thm:main}) 이다.
-이 추측은 미해결이며, 알려진 소수 항의 첨자는 \(1, 2, 4, 128, 174, 342, 435, 1429\) 뿐이다.
+이 추측은 미해결이며, 알려진 소수 항의 첨자는 \(1, 2, 4, 128, 174, 342, 435, 1429\) 이고, \(n \le 4 \cdot 10^6\) 까지 다른 항은 없다
+(OEIS A046035, MathWorld 2025-11).
 
 이 문서는 추측으로 가는 길에서 지금까지 Lean 으로 검증한 것, 문헌에 기대는 것,
 아직 계획이 없는 것을 한 그래프에 모은다. 표기는 다음과 같다.
@@ -100,7 +101,7 @@
   \label{lem:W-mono}
   \lean{SW.W_lt_succ, SW.W_strictMono, SW.W_injective, SW.W_pos}
   \leanok
-  \uses{lem:W-rec, lem:basic-primes}
+  \uses{lem:W-rec, lem:basic-primes, lem:W-small}
   \(W_n < W_{n+1}\). 따라서 \(W\) 는 순증가, 단사이고 \(n \ge 1\) 이면 \(W_n > 0\).
 \end{lemma}
 \begin{proof}
@@ -244,7 +245,8 @@
   \leanok
   \uses{def:W, def:B}
   소수 \(q, r\) 가 \(N\) 이후의 모든 항을 덮는다고 하자. 즉 \(n > N\) 이면 \(q \mid W_n\) 또는 \(r \mid W_n\).
-  그러면 \(q, r \le n\) 인 모든 \(n > N\) 에서 \(q \mid B_n\) 또는 \(q \mid B_{n+1}\) 이다.
+  그러면 \(q, r \le n\) 인 모든 \(n > N\) 에서 \(q \mid B_n\) 또는 \(r \mid B_n\) 이고 (\texttt{block\_dvd\_of\_cover}),
+  \(q \mid B_n\) 또는 \(q \mid B_{n+1}\) 이다 (\texttt{block\_dvd\_or\_succ\_of\_cover}).
 \end{lemma}
 \begin{proof}
   \leanok
@@ -260,7 +262,10 @@
   \leanok
   \uses{def:W, def:B}
   소수 \(q\) 에 대해 \(q \nmid B_n\) 이고 \(q \nmid B_{n+1}\) 인 \(n\) 이 무한히 많으면 (가정 HB(\(q\))),
-  임의의 소수 \(r\) 에 대해 \(q \nmid W_n\) 이고 \(r \nmid W_n\) 인 \(n\) 이 무한히 많다.
+  임의의 소수 \(r\) 에 대해 \(q \nmid W_n\) 이고 \(r \nmid W_n\) 인 \(n\) 이 무한히 많다
+  (\texttt{avoid\_two\_of\_block\_succ}). 처음 판 (\texttt{avoid\_two\_of\_block}) 은 가정이
+  ``\(q \nmid B_n\) 이고 \(r \nmid B_n\) 인 \(n\) 이 무한히 많다'' 이고 결론은 같다.
+  HB(\(q\)) 는 Lean 정의가 아니라 정리의 가정으로만 나타난다.
 \end{theorem}
 \begin{proof}
   \leanok
@@ -400,6 +405,7 @@
   \leanok
   \uses{lem:digitsLen-eq, lem:lt-nth-prime}
   \([10^e, 3 \cdot 10^e] \subset [10^e, 10^{e+1})\) 의 수는 모두 \(e + 1\) 자리다. \(x = 10^e, 10^{e+1}\) 에 적용한다.
+  H3 은 \(x = x_0 + p_{M+1} + 1\) 에 적용하면 \(p_{m+1} > p_{M+1}\) 이므로 \(m > M\).
 \end{proof}
 
 \begin{theorem}[IT(\(q\)) 에서 Q1, \(S = \{q, r\}\)]
@@ -408,11 +414,12 @@
   \leanok
   \uses{def:IT, def:W}
   IT(\(q\)) 가 성립하면 임의의 소수 \(r\) 에 대해 \(q \nmid W_n\) 이고 \(r \nmid W_n\) 인 \(n\) 이 무한히 많다.
+  \(q = 3\) 에 대해서는 H3 을 거치는 판 (\texttt{avoid\_three\_of\_interval\_triples}) 도 있다.
 \end{theorem}
 \begin{proof}
   \leanok
   \uses{lem:IT-Hd, thm:two-of-digit, thm:three-of-triples}
-  보조정리~\ref{lem:IT-Hd} 와 정리~\ref{thm:two-of-digit}.
+  보조정리~\ref{lem:IT-Hd} 와 정리~\ref{thm:two-of-digit}. \(q = 3\) 판은 보조정리~\ref{lem:IT-Hd} 와 정리~\ref{thm:three-of-triples}.
 \end{proof}
 
 \section{문헌의 정리 (Lean 밖)}
@@ -451,9 +458,9 @@
 \end{corollary}
 \begin{proof}
   \uses{thm:lit-Maynard, thm:two-of-IT, lem:coprime-ten, thm:one-prime}
-  \(q \ge 3\) 이고 \(q \ne 5\) 이면 정리~\ref{thm:lit-Maynard} 와 정리~\ref{thm:two-of-IT}.
-  \(q \in \{2, 5\}\) 이면 \(n \ge 4\) 에서 \(q \nmid W_n\) (보조정리~\ref{lem:coprime-ten}) 이므로
-  \(r\) 하나의 경우 (정리~\ref{thm:one-prime}) 로 줄어든다. \(r\) 에 대해서도 대칭.
+  \(q \ge 3\) 이면 정리~\ref{thm:lit-Maynard} 와 정리~\ref{thm:two-of-IT} (\(r\) 은 임의).
+  \(q = 2\) 이면 \(n \ge 4\) 에서 \(q \nmid W_n\) (보조정리~\ref{lem:coprime-ten}) 이므로
+  \(r\) 하나의 경우 (정리~\ref{thm:one-prime}) 로 줄어든다.
   Lean 에서는 문헌 정리를 가정으로 두는 형태 (정리~\ref{thm:two-of-IT}) 까지만 검증했다.
 \end{proof}
 

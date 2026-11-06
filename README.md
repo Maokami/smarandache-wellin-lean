@@ -125,6 +125,7 @@ docs/
   references.md     참고문헌
   experiments/      계산 실험 로그 (날짜, 명령, 출력)
   literature/       문헌 대조 보고서 (원문 인용, 판정, 미확인 사항)
+  tooling/          도구 조사 (GitHub Continuous AI 도입 판단 등)
 scripts/
   sw_mod.py         Wₙ mod m 궤도 계산 (Wₙ 자체는 만들지 않는다)
   sw_avoid.py       유한 집합 회피 비율과 블록 조건 비율 (Q1, H1)

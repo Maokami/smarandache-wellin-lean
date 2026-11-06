@@ -6,7 +6,7 @@
 
 표기: pₖ 는 k 번째 소수 (p₁ = 2). Lean 에서는 pₙ₊₁ = `Nat.nth Nat.Prime n`.
 
-의존 그래프와 Lean 이름의 기준은 블루프린트 (`blueprint/src/content.tex`) 다. 블루프린트 노드 제목의 [B1], [C4] 등이 이 장부의 ID 다.
+의존 그래프와 Lean 이름의 기준은 블루프린트 (`blueprint/src/content.tex`) 다. 블루프린트 노드 제목에 붙은 B1, C4 등이 이 장부의 ID 다.
 
 ## 검증된 것
 
