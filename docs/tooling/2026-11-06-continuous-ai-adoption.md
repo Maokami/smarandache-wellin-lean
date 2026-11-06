@@ -47,9 +47,17 @@ claude-code-action 에는 출력 종류·개수 제한이 없으므로 아래로
 | 에이전트 PR 범위 검사, Dependabot 검사 | CI 에 있음. Dependabot 검사는 로컬에서 순수 고정 변경 통과·섞인 변경 차단을 시험 |
 | 사냥꾼 사전 단계 (신뢰 입력) | 로컬에서 이슈 #1 통과, 다른 소유자 거부를 시험 |
 
-**AI 결과 (미확인, 인증 차단).** 네 워크플로 파일은 있다. 저장소에 `CLAUDE_CODE_OAUTH_TOKEN` secret 이 없어
-실제 Claude 실행은 0 회다. 예전에 Dependabot PR 에서 돈 리뷰 실행 하나는 출력 없이 녹색으로 끝났다.
-그래서 각 워크플로에 두 단계를 넣었다.
+**AI 결과 (워크플로별, 2026-11-06 기준).** 인증은 준비되었다. 소유자가 App 을 설치하고 `CLAUDE_CODE_OAUTH_TOKEN` 을 등록했고,
+App 토큰 교환은 실행 로그로 확인했다.
+
+| 워크플로 | 실동작 | 근거 |
+| --- | --- | --- |
+| `claude-ask.yml` | 검증됨 (읽기 전용 smoke 1 회) | 실행 42187527331, 완료 표식 답변 https://github.com/Maokami/smarandache-wellin-lean/issues/1#issuecomment-6680573869 |
+| `claude-review.yml` | 미검증 | 설정·인증 준비만. 실제 리뷰 요약 댓글 없음 |
+| `claude-lit-watch.yml` | 미검증 | 실행 없음 |
+| `claude-lemma-hunter.yml` | 미검증 | 실행 없음 |
+
+예전에 Dependabot PR 에서 돈 리뷰 실행 하나는 출력 없이 녹색으로 끝났다 (인증 전). 그래서 각 워크플로에 두 단계를 넣었다.
 
 - 실행 전: secret 이 비었으면 실패 (값은 출력하지 않는다).
 - 실행 후: 완료된 출력이 없으면 실패. 진행 상태 댓글을 결과로 세지 않도록, 최종 답변·리뷰 요약·PR 본문·실패 보고에
