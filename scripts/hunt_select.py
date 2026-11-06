@@ -5,7 +5,7 @@
   1. 열린 연구 PR (head 가 claude/hunt-*, Draft·Ready 모두) 이 2 개 이상이면 새 작업을 시작하지 않는다.
   2. 후보는 열린 lemma-hunt 이슈 가운데 소유자가 쓰고, 본문을 소유자 말고는 고친 적 없는 것.
   3. 열린 또는 병합된 연구 PR 이 본문에서 그 이슈를 가리키면 (Refs/Closes/Fixes/Resolves #N) 고르지 않는다.
-  4. 같은 본문 (task 해시) 과 같은 기준 main SHA 로 시작한 기록이 있으면 고르지 않는다 (결과와 무관).
+  4. 같은 본문 (task 해시) 과 같은 실행 기준 SHA (예약 실행은 main) 로 시작한 기록이 있으면 고르지 않는다 (결과와 무관).
      기록은 작업 선택 직후, 비싼 Lean 준비와 AI 실행 전에 github-actions 봇이 남기는 댓글의 고정 표식이다
      (outcome=started). 그래서 시간 초과나 취소로 끝나도 기록이 남는다. AI 가 쓴 문장은 보지 않는다.
   5. 남은 것 가운데 번호가 가장 작은 이슈 하나.
@@ -106,7 +106,7 @@ def select(issues: List[dict], prs: List[dict], owner: str, base: str,
            explicit: Optional[int] = None) -> Dict[str, Any]:
     """결정적 선택. 반환: {"issue": 번호 또는 None, "task_hash", "body", "reasons": [문장]}."""
     if not re.fullmatch(r"[0-9a-f]{40}", base):
-        raise SelectError("기준 main SHA 가 40 자리 16 진수가 아니다")
+        raise SelectError("실행 기준 SHA 가 40 자리 16 진수가 아니다")
     reasons: List[str] = []
     open_research = sorted(p["number"] for p in prs
                            if (p.get("headRefName") or "").startswith(RESEARCH_PREFIX)
@@ -133,7 +133,7 @@ def select(issues: List[dict], prs: List[dict], owner: str, base: str,
         h = task_hash(issue.get("body"))
         same = [a for a in attempts(issue) if a["task"] == h and a["base"] == base]
         if same and explicit is None:
-            reasons.append(f"#{n} 건너뜀: 같은 본문·기준 main 으로 이미 시작함 (run {same[-1]['run']}, {same[-1]['outcome']})")
+            reasons.append(f"#{n} 건너뜀: 같은 본문·실행 기준 SHA 로 이미 시작함 (run {same[-1]['run']}, {same[-1]['outcome']})")
             continue
         if same:
             reasons.append(f"#{n}: 같은 조건의 이전 시도가 있지만 명시적 수동 실행이라 다시 시도")
@@ -192,7 +192,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     s = sub.add_parser("select")
     s.add_argument("--repo", required=True)
     s.add_argument("--owner", required=True)
-    s.add_argument("--base", required=True, help="기준 main 커밋 SHA (40 자리)")
+    s.add_argument("--base", required=True, help="실행 기준 커밋 SHA (40 자리, 예약 실행은 main)")
     s.add_argument("--issue", default="", help="명시적 수동 실행의 이슈 번호 (비우면 예약 규칙)")
     s.add_argument("--task-out")
     s.add_argument("--github-output")
@@ -207,7 +207,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.cmd == "record-body":
         marker = attempt_marker(args.task, args.base, args.outcome, args.run)
-        print(f"자동 사냥 시작 기록 ({args.outcome}): 기준 main {args.base[:7]}, [실행]({args.run_url}).\n"
+        print(f"자동 사냥 시작 기록 ({args.outcome}): 실행 기준 SHA {args.base[:7]}, [실행]({args.run_url}).\n"
               f"결과는 같은 실행의 PR 이나 실패 보고로 확인한다. 같은 본문·같은 기준으로는 예약 실행이 다시 고르지 않는다\n"
               f"(이슈 본문을 고치거나 main 이 바뀌면 다시 고를 수 있고, 수동 실행은 언제든 가능하다).\n\n{marker}")
         return 0
