@@ -38,14 +38,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ inputs.issue }}
           OWNER: ${{ github.repository_owner }}
+        # 소유자가 쓰고, 본문을 소유자 말고는 고친 적 없는 (editor), 열린 lemma-hunt 이슈만 받는다.
+        # 작업 파일에는 번호와 본문만 넣는다 (제목 수정은 editor 에 기록되지 않는다).
         run: |
+          set -euo pipefail
           if [ -z "$ISSUE" ]; then
-            ISSUE=$(gh issue list -R "$GITHUB_REPOSITORY" --label lemma-hunt --state open --author "$OWNER" \
+            ISSUE=$(gh issue list -R "$GITHUB_REPOSITORY" --label lemma-hunt --state open --author "$OWNER" --limit 200 \
                       --json number --jq 'map(.number) | min // empty')
           fi
           if ! [[ "$ISSUE" =~ ^[0-9]+$ ]]; then echo "작업 없음"; exit 0; fi
-          gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json number,title,body,author,labels > "$RUNNER_TEMP/task.json"
-          jq -e --arg o "$OWNER" '.author.login == $o and any(.labels[]; .name == "lemma-hunt")' "$RUNNER_TEMP/task.json"
+          # shellcheck disable=SC2016  # GraphQL 변수 ($o 등) 는 셸이 아니라 GitHub 가 푼다
+          gh api graphql -F o="${GITHUB_REPOSITORY%/*}" -F r="${GITHUB_REPOSITORY#*/}" -F n="$ISSUE" -f query='
+            query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){
+              number body state author{login} editor{login} lastEditedAt labels(first:20){nodes{name}}}}}' \
+            --jq '.data.repository.issue' > "$RUNNER_TEMP/issue.json"
+          jq -e --arg o "$OWNER" '
+            .author.login == $o and .state == "OPEN" and
+            (.editor == null or .editor.login == $o) and
+            any(.labels.nodes[]; .name == "lemma-hunt")' "$RUNNER_TEMP/issue.json" > /dev/null
+          jq '{number, body}' "$RUNNER_TEMP/issue.json" > "$RUNNER_TEMP/task.json"
           echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
 
       - name: Free disk space
@@ -87,7 +98,7 @@ jobs:
             ISSUE: #${{ steps.task.outputs.issue }}
 
             너는 이 저장소의 저자 에이전트다. AGENTS.md 를 먼저 읽고 그대로 따른다.
-            작업은 TASK FILE 에 있는 이슈 하나 (제목과 본문) 뿐이다. 이슈 댓글이나 다른 이슈는 읽지 않는다.
+            작업은 TASK FILE 에 있는 이슈 하나 (번호와 본문) 뿐이다. 이슈 댓글이나 다른 이슈는 읽지 않는다.
 
             1. 형식화: 이슈가 말하는 진술을 blueprint/src/content.tex 의 해당 노드와 맞춰 Lean 으로 쓴다.
                증명되지 않은 가정은 이름 붙인 `def ... : Prop` 의 명시적 인자로만 받는다.
@@ -107,5 +118,5 @@ jobs:
           claude_args: |
             --model claude-opus-5-5
             --max-turns 150
-            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/:*),Bash(git push -u origin claude/:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
-            --disallowedTools "Read(./.git/**),Read(//proc/**)"
+            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git push -u origin claude/*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
+            --disallowedTools "Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *),Bash(* $GH_TOKEN*),Bash(* ${GH_TOKEN}*),Bash(* $GITHUB_TOKEN*),Bash(* ${GITHUB_TOKEN}*)"

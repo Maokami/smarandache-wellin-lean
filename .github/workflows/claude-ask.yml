@@ -10,10 +10,6 @@ on:
   issues:
     types: [opened]
 
-concurrency:
-  group: claude-ask-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: false
-
 jobs:
   ask:
     if: |
@@ -21,6 +17,10 @@ jobs:
       (github.event_name != 'issues' && contains(github.event.comment.body, '@claude') && github.event.comment.author_association == 'OWNER')
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # job 수준이라 조건을 통과한 (소유자) 요청끼리만 줄을 선다. 외부인 댓글이 대기 중인 요청을 취소하지 못한다.
+    concurrency:
+      group: claude-ask-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
@@ -46,4 +46,4 @@ jobs:
             --max-turns 20
             --append-system-prompt "이 워크플로는 읽기 전용이다. 파일을 고치거나 커밋하지 말고 AGENTS.md, blueprint/src/content.tex, docs/ 를 읽고 한국어로 답한다."
             --allowedTools "Read,Glob,Grep,Bash(git log:*),Bash(git show:*)"
-            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*)"
+            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Read(./.git/**),Read(//proc/**)"

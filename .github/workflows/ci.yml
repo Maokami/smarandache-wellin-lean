@@ -59,7 +59,7 @@ jobs:
       # 브랜치 이름은 에이전트가 정할 수 있으므로 PR 작성자 (위조 불가) 로도 판단한다.
       # 이 가드는 ci.yml 을 바꾸는 PR 에는 무력하다. 그 경우는 ruleset 의 사람 승인이 막는다.
       - name: Agent PR scope guard
-        # Dependabot 은 .github/ 의 action 고정만 바꾸므로 예외다 (머지에는 여전히 사람 승인이 필요하다).
+        # Dependabot PR 은 아래 별도 단계가 내용까지 검사한다.
         if: >-
           github.event_name == 'pull_request' &&
           github.event.pull_request.user.login != 'dependabot[bot]' &&
@@ -72,5 +72,22 @@ jobs:
           git diff --name-only --no-renames "origin/${BASE_REF}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
           if grep -nE '^(docs/lemma-ledger\.md|README\.md|docs/research-plan\.md|lakefile\.toml|lake-manifest\.json|lean-toolchain|AGENTS\.md|CLAUDE\.md|scripts/check_blueprint\.py|site/|\.github/|\.claude/|\.mcp\.json)' "$RUNNER_TEMP/changed.txt"; then
             echo "::error::에이전트 PR 이 보호된 파일을 바꿨다 (AGENTS.md 의 저자·검증자 규칙)."
+            exit 1
+          fi
+
+      # Dependabot PR 은 워크플로 파일의 `uses:` 고정 줄만 바꿀 수 있다. 다른 주체가 그 브랜치에 무엇을 섞으면 실패한다.
+      - name: Dependabot PR scope
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git diff --name-only --no-renames "origin/${BASE_REF}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
+          if grep -vE '^\.github/workflows/[^/]+\.ya?ml$' "$RUNNER_TEMP/changed.txt"; then
+            echo "::error::Dependabot PR 이 워크플로 밖의 파일을 바꿨다."
+            exit 1
+          fi
+          git diff -U0 --no-renames "origin/${BASE_REF}...HEAD" | grep -E '^[+-]' | grep -vE '^(\+\+\+|---) ' > "$RUNNER_TEMP/lines.txt" || true
+          if grep -vE '^[+-][[:space:]]+(- )?uses: [A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@([0-9a-f]{40}|v[0-9][0-9.]*)([[:space:]]+#.*)?$' "$RUNNER_TEMP/lines.txt"; then
+            echo "::error::Dependabot PR 이 uses: 고정 줄 밖의 내용을 바꿨다."
             exit 1
           fi
