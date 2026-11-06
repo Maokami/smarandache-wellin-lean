@@ -119,4 +119,4 @@ jobs:
             --model claude-opus-5-5
             --max-turns 150
             --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git push -u origin claude/*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
-            --disallowedTools "Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *),Bash(* $GH_TOKEN*),Bash(* ${GH_TOKEN}*),Bash(* $GITHUB_TOKEN*),Bash(* ${GITHUB_TOKEN}*)"
+            --disallowedTools "Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *)"

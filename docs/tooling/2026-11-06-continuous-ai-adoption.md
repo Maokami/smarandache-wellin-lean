@@ -56,7 +56,9 @@ lean-action 을 SHA 로 고정하고 Dependabot 을 켰다. 외부 기여자의 
 App 이 남의 PR (Dependabot 등) 에 push 한 뒤 승인할 수 있었다. ruleset 에 마지막 push 승인 (`require_last_push_approval`) 을 켜고,
 Dependabot PR 은 예외 대신 "`uses:` 고정 줄만 바꿨는가" 를 검사한다. 사냥꾼의 사전 단계는 이슈 본문을 소유자 말고 누가 고쳤는지
 (`editor`) 도 본다. 문헌 감시는 Claude 에게서 Bash 를 빼고 구조화 출력 (`--json-schema`) 을 받아 다음 단계가 이슈를 연다.
-리뷰어·사냥꾼은 `gh` 의 `--body-file`, `-F`, 토큰 변수 확장을 금지했다.
+리뷰어·사냥꾼은 `gh` 의 `--body-file`, `-F` 를 금지했다. 토큰 변수 (`$GH_TOKEN`) 금지 패턴도 넣었다가 뺐다:
+action 이 `claude_args` 를 셸 규칙으로 토큰화하면서 변수가 빈 문자열이 되어 `Bash(* *)` 로 바뀌었고, 모든 Bash 명령을 막았다
+(2 차 재검토). 변수 이름 나열은 원래 막을 수 없는 경로라 경계로 삼지 않는다.
 
 남은 위험 (받아들임): `lake build` 는 Lean 코드 실행이므로 사냥꾼은 사실상 임의 코드를 돌린다. Anthropic 자격 증명은
 서브프로세스 환경에서 지워지지만, 프로세스 격리 (bubblewrap) 가 없어 `/proc` 경유 노출 가능성은 남는다. 입력이 소유자 이슈 본문뿐이라

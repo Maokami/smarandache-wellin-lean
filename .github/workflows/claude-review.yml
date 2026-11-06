@@ -34,8 +34,10 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PR 댓글은 pull_requests 쓰기로 충분하다. issues 는 읽기로 내려 유출 시 피해를 줄인다.
           additional_permissions: |
             contents: read
+            issues: read
             actions: read
           prompt: |
             REPO: ${{ github.repository }}
@@ -63,4 +65,4 @@ jobs:
             --model claude-opus-5-5
             --max-turns 40
             --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment,mcp__github_ci__get_ci_status"
-            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *),Bash(* $GH_TOKEN*),Bash(* ${GH_TOKEN}*),Bash(* $GITHUB_TOKEN*),Bash(* ${GITHUB_TOKEN}*)"
+            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *)"

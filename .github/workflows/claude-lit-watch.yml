@@ -70,7 +70,7 @@ jobs:
             --json-schema '{"type":"object","properties":{"create":{"type":"boolean"},"body":{"type":"string"}},"required":["create"]}'
 
       - name: Open issue
-        if: fromJSON(steps.watch.outputs.structured_output).create == true
+        if: steps.watch.outputs.structured_output != '' && fromJSON(steps.watch.outputs.structured_output).create == true
         env:
           GH_TOKEN: ${{ github.token }}
           OUT: ${{ steps.watch.outputs.structured_output }}
