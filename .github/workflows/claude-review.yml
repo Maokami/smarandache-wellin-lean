@@ -44,6 +44,21 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 이면 Claude Code 는 bubblewrap 없이 시작하지 않는다.
+      # action 은 allowed_non_write_users 가 있을 때만 설치하므로 여기서 같은 방식으로 설치한다 (action.yml 의 단계와 같다).
+      - name: Install subprocess isolation (bubblewrap)
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends bubblewrap socat && break
+            echo "apt-get attempt $i failed, retrying..."
+            sleep 5
+          done
+          command -v bwrap
+          # Ubuntu 24.04+ 는 AppArmor 로 비특권 user namespace 를 막는다.
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
       - name: Review
         uses: anthropics/claude-code-action@v1
         with:

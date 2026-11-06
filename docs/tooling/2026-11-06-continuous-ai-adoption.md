@@ -66,6 +66,16 @@ claude-code-action 에는 출력 종류·개수 제한이 없으므로 아래로
 `scripts/ai_status.sh` 가 설정 파일, 인증 준비 (등록됨 / 없음 / 조회 실패), Action 결론, 실제 출력을 따로 보여 준다.
 실제 출력은 완료 표식이 있는 것만 완료로 세고, 표식 없는 `claude[bot]` 댓글은 관측만 한다.
 
+## 첫 smoke (2026-11-06)
+
+- 인증 준비: 소유자가 App 설치와 `CLAUDE_CODE_OAUTH_TOKEN` 등록을 마쳤다 (secret 이름과 갱신 시각만 확인).
+- 실행 42187242435 (이슈 #1 의 소유자 `@claude` 댓글): OIDC 토큰 발급과 App 토큰 교환 성공, 쓰기 권한·사람 actor 확인 통과.
+  그러나 Claude Code 가 시작하지 못해 실패했다. `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` 은 bubblewrap 을 요구하는데,
+  claude-code-action 은 `allowed_non_write_users` 가 있을 때만 그것을 설치한다. 구독 토큰 자체는 아직 쓰이지 않았다.
+- 결과 판정: 진행 상태 댓글 하나만 남았고 완료 표식 답변은 없다. 출력 확인 단계는 건너뛰어졌고 실행은 실패다. 완료가 아니다.
+- 수정: 네 워크플로에 action 과 같은 bubblewrap 설치 단계 (Ubuntu 24.04 의 AppArmor 설정 포함) 를 넣었다.
+  환경 정리와 프로세스 격리를 함께 유지한다.
+
 ## 재개 순서 (저장소 소유자)
 
 1. Claude GitHub App 을 이 저장소에 설치한다: https://github.com/apps/claude (이 저장소만 선택).
@@ -99,9 +109,8 @@ Dependabot PR 은 예외 대신 "`uses:` 고정 줄만 바꿨는가" 를 검사�
 action 이 `claude_args` 를 셸 규칙으로 토큰화하면서 변수가 빈 문자열이 되어 `Bash(* *)` 로 바뀌었고, 모든 Bash 명령을 막았다
 (2 차 재검토). 변수 이름 나열은 원래 막을 수 없는 경로라 경계로 삼지 않는다.
 
-남은 위험 (받아들임): `lake build` 는 Lean 코드 실행이므로 사냥꾼은 사실상 임의 코드를 돌린다. Anthropic 자격 증명은
-서브프로세스 환경에서 지워지지만, 프로세스 격리 (bubblewrap) 가 없어 `/proc` 경유 노출 가능성은 남는다. 입력이 소유자 이슈 본문뿐이라
-촉발 경로가 좁다.
+남은 위험 (받아들임): `lake build` 는 Lean 코드 실행이므로 사냥꾼은 사실상 임의 코드를 돌린다. 입력이 소유자 이슈 본문뿐이라
+촉발 경로가 좁다. 프로세스 격리 (bubblewrap) 는 첫 smoke 뒤에 넣었다 (아래).
 
 남은 선택 사항: 관리자 우회를 `pull_request` 모드로 바꾸면 이 PC 의 로컬 에이전트 (Claude Code) 도 PR 을 거친다.
 지금은 소유자의 직접 push 작업 방식을 유지한다.
