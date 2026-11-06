@@ -1,2 +1,8 @@
 .lake/
 .DS_Store
+
+# leanblueprint 산출물 (scripts/blueprint.sh 로 다시 만든다)
+blueprint/web/
+blueprint/print/
+blueprint/lean_decls
+blueprint/src/*.paux

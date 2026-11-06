@@ -1,0 +1,39 @@
+% This file makes a printable version of the blueprint
+% It should include all the \usepackage needed for the pdf version.
+% The template version assume you want to use a modern TeX compiler
+% such as xeLaTeX or luaLaTeX including support for unicode
+% and Latin Modern Math font with standard bugfixes applied.
+% It also uses expl3 in order to support macros related to the dependency graph.
+% It also includes standard AMS packages (and their improved version
+% mathtools) as well as support for links with a sober decoration
+% (no ugly rectangles around links).
+% It is otherwise a very minimal preamble (you should probably at least
+% add cleveref and tikz-cd).
+
+\documentclass[a4paper]{report}
+
+\usepackage{geometry}
+
+\usepackage{expl3}
+
+\usepackage{amssymb, amsthm, mathtools}
+\usepackage[unicode,colorlinks=true,linkcolor=blue,urlcolor=magenta, citecolor=blue]{hyperref}
+
+\usepackage[warnings-off={mathtools-colon,mathtools-overbracket}]{unicode-math}
+
+% 한국어: xetexko. macOS 글꼴이 있으면 쓰고, 없으면 TeX Live 의 기본 한글 글꼴(은 글꼴)을 쓴다.
+\usepackage{kotex}
+\IfFontExistsTF{AppleMyungjo}{\setmainhangulfont{AppleMyungjo}[BoldFont={AppleSDGothicNeo-Bold}]}{}
+\IfFontExistsTF{Apple SD Gothic Neo}{\setsanshangulfont{Apple SD Gothic Neo}}{}
+
+
+\input{macros/common}
+\input{macros/print}
+
+\title{Smarandache–Wellin 소수의 무한성: Lean 4 형식화 설계도}
+\author{Maokami}
+
+\begin{document}
+\maketitle
+\input{content}
+\end{document}

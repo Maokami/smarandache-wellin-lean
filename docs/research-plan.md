@@ -75,6 +75,8 @@ log Wₙ = Σₖ≤ₙ log pₖ + O(n) ~ pₙ ~ n log n .
 
 ## 7. 작업 방식
 
+- 의존 구조와 Lean 대응은 블루프린트 (`blueprint/src/content.tex`) 에 둔다. 새 정리는 블루프린트 노드, `Audit.lean`,
+  장부를 함께 갱신하고 `scripts/blueprint.sh --lean` 으로 대응을 확인한다.
 - 전략마다 목표 명제 하나를 `lemma-ledger.md` 에 등록한다. 명제는 변수 범위와 양화사를 포함해 Lean 으로 서술
   가능한 형태로 적는다.
 - 증명되지 않은 명제는 Lean 파일에 `sorry` 로 두지 않는다. 장부에만 둔다.

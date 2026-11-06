@@ -76,6 +76,29 @@ done
 
 그런 프로젝트가 없으면 `lake exe cache get` 으로 미리 빌드된 olean 을 받는다.
 
+## 블루프린트
+
+`blueprint/src/content.tex` 는 [leanblueprint](https://github.com/PatrickMassot/leanblueprint) 형식의 설계도다.
+정의와 보조정리마다 `\lean{...}` (Lean 이름), `\uses{...}` (의존), `\leanok` (Lean 검증), `\notready` (계획 없음)
+를 붙이고, 웹 판·PDF 판과 색칠된 의존 그래프를 만든다. 문헌 정리 (H3, IT(q) 의 근거) 는 `\lean` 없는 별도 노드로,
+열린 문제 (Q1 |S| ≥ 3, Q2, Q4, 목표 추측) 는 `\notready` 노드로 둔다.
+
+```bash
+uv tool install leanblueprint        # graphviz 필요: brew install graphviz
+scripts/blueprint.sh                 # 웹 판 + PDF 판 + 대응 검사 (블루프린트 ↔ 소스 ↔ Audit)
+scripts/blueprint.sh --lean          # 위에 더해 모든 \lean 이름을 lake env lean 으로 확인 (수 분)
+scripts/blueprint.sh serve           # http://127.0.0.1:8000 , 의존 그래프는 dep_graph_document.html
+```
+
+산출물 `blueprint/web/`, `blueprint/print/print.pdf`, `blueprint/lean_decls` 는 커밋하지 않는다.
+leanblueprint 의 `checkdecls` 는 외부 Lake 패키지를 의존성에 넣어야 해서 쓰지 않고,
+`scripts/check_blueprint.py` 가 같은 검사와 역방향 검사 (소스의 모든 선언이 블루프린트에 있는가,
+블루프린트의 정리가 모두 감사되는가) 를 한다. 그래프의 색: 초록 = Lean 검증, 파랑 배경 = 의존이 모두 갖춰져
+형식화 가능 (문헌 노드는 범위 밖이라 형식화하지 않음), 주황 테두리 = 계획 없음.
+
+장부 (`docs/lemma-ledger.md`) 와의 분담: 블루프린트는 의존 구조와 Lean 대응의 기준이고, 장부는 상태의 세부,
+실패 이유, 계산 근거를 기록한다. 새 정리를 추가하면 `Audit.lean`, 블루프린트, 장부를 함께 고친다.
+
 ## 검증 기준
 
 - 라이브러리에 들어가는 정리는 `sorry`, 새 `axiom` 없이 컴파일되어야 한다. 미증명 명제는 Lean 파일이 아니라
@@ -95,6 +118,7 @@ SmarandacheWellin/
   Avoid.lean        유한 소수 집합 회피 (Q1): |S| = 1 증명, |S| = 2 는 Shiu 형 연속 소수 가정 (H3, Hd(q)) 으로 환원
   Interval.lean     구간 판 Shiu 가정 IT(q) 에서 H3, Hd(q) 를 유도 (자릿수 보조정리)
   Audit.lean        #print axioms
+blueprint/src/      leanblueprint 설계도 (content.tex, 매크로, 설정)
 docs/
   research-plan.md  전략 비교, 가장 약한 고리 규칙, 작업 방식
   lemma-ledger.md   보조명제 장부 (명제·상태·가정·역할·실패 이유·근거)
@@ -106,4 +130,6 @@ scripts/
   sw_avoid.py       유한 집합 회피 비율과 블록 조건 비율 (Q1, H1)
   sw_triples.py     연속 소수 가정 H3, HB(q), Hd(q) 의 비율·개수
   sw_heuristic.py   보정 확률 모형 E(a, b) 와 관측 비교
+  check_blueprint.py 블루프린트 ↔ Lean 소스 ↔ Audit 대응 검사
+  blueprint.sh      블루프린트 빌드와 검사
 ```

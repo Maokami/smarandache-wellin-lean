@@ -1,0 +1,17 @@
+% 웹 판과 PDF 판이 함께 쓰는 매크로와 설정.
+% 아래 정리형 환경이 의존 그래프에 나타난다 (leanblueprint 기본값).
+% 모든 환경이 theorem 카운터를 공유한다.
+\newtheorem{theorem}{정리}
+\newtheorem{proposition}[theorem]{명제}
+\newtheorem{lemma}[theorem]{보조정리}
+\newtheorem{corollary}[theorem]{따름정리}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{정의}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{참고}
+
+% 표기
+\newcommand{\W}{W}
+\newcommand{\dig}{d}
