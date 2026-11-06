@@ -25,6 +25,18 @@ jobs:
     env:
       CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
     steps:
+      # 인증 준비 확인 (값은 출력하지 않는다. secret 이 비었는지만 본다) 과 시작 시각 기록.
+      - name: Check Claude credentials
+        id: pre
+        env:
+          HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret 이 없다. Claude GitHub App 설치와 secret 등록이 필요하다 (README 의 1 회 설정)."
+            exit 1
+          fi
+          echo "start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -69,13 +81,32 @@ jobs:
             --disallowedTools "Bash,Edit,MultiEdit,Write,NotebookEdit,Read(./.git/**),Read(//proc/**)"
             --json-schema '{"type":"object","properties":{"create":{"type":"boolean"},"body":{"type":"string"}},"required":["create"]}'
 
+      # 구조화 출력이 없거나, create 가 boolean 이 아니거나, create = true 인데 body 가 공백뿐이면 실패다.
+      # create = false 는 정상 결과 ("새 항목 없음") 다.
+      - name: Verify watch output
+        env:
+          OUT: ${{ steps.watch.outputs.structured_output }}
+        run: |
+          set -euo pipefail
+          if ! jq -e 'type == "object" and (.create | type) == "boolean"' <<<"$OUT" > /dev/null; then
+            echo "::error::구조화 출력이 없거나 create 가 boolean 이 아니다."
+            exit 1
+          fi
+          if jq -e '.create == true' <<<"$OUT" > /dev/null &&
+             ! jq -e '(.body // "") | type == "string" and (gsub("\\s"; "") | length) > 0' <<<"$OUT" > /dev/null; then
+            echo "::error::create = true 인데 body 가 비었다."
+            exit 1
+          fi
+          echo "create=$(jq -r '.create' <<<"$OUT")"
+
       - name: Open issue
         if: steps.watch.outputs.structured_output != '' && fromJSON(steps.watch.outputs.structured_output).create == true
         env:
           GH_TOKEN: ${{ github.token }}
           OUT: ${{ steps.watch.outputs.structured_output }}
         run: |
-          jq -r '.body // ""' <<<"$OUT" > "$RUNNER_TEMP/body.md"
-          if [ ! -s "$RUNNER_TEMP/body.md" ]; then echo "본문 없음"; exit 0; fi
-          gh issue create -R "$GITHUB_REPOSITORY" --label lit-watch \
-            --title "[문헌 감시] $(date -u +%F)" --body-file "$RUNNER_TEMP/body.md"
+          jq -r '.body' <<<"$OUT" > "$RUNNER_TEMP/body.md"
+          url=$(gh issue create -R "$GITHUB_REPOSITORY" --label lit-watch \
+                  --title "[문헌 감시] $(date -u +%F)" --body-file "$RUNNER_TEMP/body.md")
+          if [ -z "$url" ]; then echo "::error::이슈를 만들지 못했다."; exit 1; fi
+          echo "열린 이슈: $url"

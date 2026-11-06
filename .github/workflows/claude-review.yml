@@ -21,9 +21,23 @@ jobs:
       contents: read
       id-token: write
       actions: read
+      pull-requests: read   # 출력 확인 단계 (워크플로 토큰) 용
+      issues: read
     env:
       CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
     steps:
+      # 인증 준비 확인 (값은 출력하지 않는다. secret 이 비었는지만 본다) 과 시작 시각 기록.
+      - name: Check Claude credentials
+        id: pre
+        env:
+          HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret 이 없다. Claude GitHub App 설치와 secret 등록이 필요하다 (README 의 1 회 설정)."
+            exit 1
+          fi
+          echo "start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -61,8 +75,27 @@ jobs:
             출력: `gh pr comment` 로 한국어 댓글 하나를 단다. 항목마다 ✅ / ⚠️ / ❌ 와 근거 (파일:줄) 를 적는다.
             특정 줄의 문제는 mcp__github_inline_comment__create_inline_comment 로 인라인 댓글을 단다.
             문제가 없으면 짧게 그렇다고 쓴다.
+            요약 댓글의 마지막 줄에 완료 표식 [sw-done:${{ github.run_id }}.${{ github.run_attempt }}] 를 그대로 쓴다. 인라인 댓글에는 쓰지 않는다.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 40
             --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment,mcp__github_ci__get_ci_status"
             --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *)"
+
+      # green 은 리뷰가 아니다. 이번 실행의 완료 표식이 든 claude[bot] 요약 댓글이 있어야 성공이다.
+      - name: Verify review output
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SINCE: ${{ steps.pre.outputs.start }}
+          MARK: "[sw-done:${{ github.run_id }}.${{ github.run_attempt }}]"
+        run: |
+          set -euo pipefail
+          n=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments?since=$SINCE&per_page=100" \
+                | jq --arg m "$MARK" '[.[] | select(.user.login == "claude[bot]" and (.body | contains($m)))] | length')
+          [[ "$n" =~ ^[0-9]+$ ]] || { echo "::error::댓글 수를 읽지 못했다."; exit 1; }
+          echo "완료 표식이 든 claude[bot] 요약 댓글: $n"
+          if [ "$n" -eq 0 ]; then
+            echo "::error::완료 표식이 든 리뷰 요약이 없다. Action 은 끝났지만 리뷰는 완료되지 않았다."
+            exit 1
+          fi

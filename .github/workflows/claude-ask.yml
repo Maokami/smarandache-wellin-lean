@@ -25,9 +25,23 @@ jobs:
       contents: read
       id-token: write
       actions: read
+      pull-requests: read   # 출력 확인 단계 (워크플로 토큰) 용
+      issues: read
     env:
       CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
     steps:
+      # 인증 준비 확인 (값은 출력하지 않는다. secret 이 비었는지만 본다) 과 시작 시각 기록.
+      - name: Check Claude credentials
+        id: pre
+        env:
+          HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret 이 없다. Claude GitHub App 설치와 secret 등록이 필요하다 (README 의 1 회 설정)."
+            exit 1
+          fi
+          echo "start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -44,6 +58,24 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 20
-            --append-system-prompt "이 워크플로는 읽기 전용이다. 파일을 고치거나 커밋하지 말고 AGENTS.md, blueprint/src/content.tex, docs/ 를 읽고 한국어로 답한다."
+            --append-system-prompt "이 워크플로는 읽기 전용이다. 파일을 고치거나 커밋하지 말고 AGENTS.md, blueprint/src/content.tex, docs/ 를 읽고 한국어로 답한다. 최종 답변의 마지막 줄에 완료 표식 [sw-done:${{ github.run_id }}.${{ github.run_attempt }}] 를 그대로 쓴다."
             --allowedTools "Read,Glob,Grep,Bash(git log:*),Bash(git show:*)"
             --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Read(./.git/**),Read(//proc/**)"
+
+      # green 은 답변이 아니다. 진행 상태 댓글이 아니라, 이번 실행의 완료 표식이 든 claude[bot] 댓글이 있어야 성공이다.
+      - name: Verify answer output
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number }}
+          SINCE: ${{ steps.pre.outputs.start }}
+          MARK: "[sw-done:${{ github.run_id }}.${{ github.run_attempt }}]"
+        run: |
+          set -euo pipefail
+          n=$(gh api "repos/$GITHUB_REPOSITORY/issues/$NUM/comments?since=$SINCE&per_page=100" \
+                | jq --arg m "$MARK" '[.[] | select(.user.login == "claude[bot]" and (.body | contains($m)))] | length')
+          [[ "$n" =~ ^[0-9]+$ ]] || { echo "::error::댓글 수를 읽지 못했다."; exit 1; }
+          echo "완료 표식이 든 claude[bot] 댓글: $n"
+          if [ "$n" -eq 0 ]; then
+            echo "::error::완료 표식이 든 답변이 없다 (진행 상태 댓글만 있거나 답이 없다)."
+            exit 1
+          fi

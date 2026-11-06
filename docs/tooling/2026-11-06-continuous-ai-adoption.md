@@ -33,13 +33,52 @@ claude-code-action 에는 출력 종류·개수 제한이 없으므로 아래로
    `checkdecls`. 에이전트의 "증명했다" 는 말은 판정이 아니다 (`AGENTS.md`).
 8. **사람이 머지하고 장부를 고친다.** 사냥꾼 PR 은 draft 로 열리고, 사람이 Ready 로 바꿀 때 리뷰어가 돈다.
 
-## 깔린 것
+## 깔린 것과 검증 상태 (2026-11-06)
 
-| 워크플로 | 상태 (2026-11-06) |
+두 층을 나눠 적는다. 보호 장치와 CI 는 실행으로 확인했고, AI 결과는 아직 한 번도 확인하지 못했다.
+
+**보호 장치와 CI (확인됨).**
+
+| 항목 | 상태 |
 | --- | --- |
-| `ci.yml` | 동작. 첫 녹색 실행에서 공리 감사가 선언 128 개 (보조 선언 포함) 를 허용 목록 안에서 확인 |
-| `blueprint.yml` | 동작. https://maokami.github.io/smarandache-wellin-lean/ 에 웹·PDF·의존 그래프 배포. CI 의 PDF 는 은바탕 글꼴 |
-| `claude-review.yml`, `claude-ask.yml`, `claude-lit-watch.yml`, `claude-lemma-hunter.yml` | 파일만 있음. Claude GitHub App 설치와 secret 설정 뒤 동작 |
+| `ci.yml` | main 녹색 (예: 실행 42183868930). 공리 감사가 선언 128 개를 허용 목록 안에서 확인 |
+| `blueprint.yml` | main 녹색 (예: 실행 42183868995). https://maokami.github.io/smarandache-wellin-lean/ 배포 |
+| ruleset `protect-main` | PR, 승인 1, 마지막 push 승인, `Lean build and audits` (github-actions 앱) 필수. 관리자만 우회 |
+| 에이전트 PR 범위 검사, Dependabot 검사 | CI 에 있음. Dependabot 검사는 로컬에서 순수 고정 변경 통과·섞인 변경 차단을 시험 |
+| 사냥꾼 사전 단계 (신뢰 입력) | 로컬에서 이슈 #1 통과, 다른 소유자 거부를 시험 |
+
+**AI 결과 (미확인, 인증 차단).** 네 워크플로 파일은 있다. 저장소에 `CLAUDE_CODE_OAUTH_TOKEN` secret 이 없어
+실제 Claude 실행은 0 회다. 예전에 Dependabot PR 에서 돈 리뷰 실행 하나는 출력 없이 녹색으로 끝났다.
+그래서 각 워크플로에 두 단계를 넣었다.
+
+- 실행 전: secret 이 비었으면 실패 (값은 출력하지 않는다).
+- 실행 후: 완료된 출력이 없으면 실패. 진행 상태 댓글을 결과로 세지 않도록, 최종 답변·리뷰 요약·PR 본문·실패 보고에
+  이번 실행의 완료 표식 `[sw-done:<run_id>.<run_attempt>]` 를 요구하고 `claude[bot]` 이 쓴 본문에서 확인한다.
+  - 질의·리뷰: 표식이 든 `claude[bot]` 댓글.
+  - 사냥꾼: 이번 실행 이후 만든 `claude/` 브랜치의 draft PR 로 본문에 `Refs #이슈` 와 표식이 있는 것 (draft 가 아니면 실패),
+    또는 PR 이 없을 때 이슈에 표식이 든 실패 보고.
+  - 문헌 감시: `jq -e` 로 `create` 가 boolean 인지, `create = true` 면 공백을 뺀 `body` 가 비지 않았는지, 이슈 URL 이 나왔는지.
+  - 검증 스크립트는 `set -euo pipefail` 과 숫자 확인으로 API·jq 실패 때 통과하지 않는다 (fail closed).
+  - 음성 시험: 워크플로의 실제 `run:` 스크립트를 꺼내 가짜 `gh` 로 돌렸다. 진행 댓글만, 다른 실행·attempt 의 표식, 사람이 쓴 표식,
+    다른 이슈의 PR, draft 아닌 PR, 시작 전 PR, 공백뿐인 body, boolean 아닌 create, API 실패는 거부하고, 정상 결과는 통과했다
+    (26 사례).
+
+`scripts/ai_status.sh` 가 설정 파일, 인증 준비 (등록됨 / 없음 / 조회 실패), Action 결론, 실제 출력을 따로 보여 준다.
+실제 출력은 완료 표식이 있는 것만 완료로 세고, 표식 없는 `claude[bot]` 댓글은 관측만 한다.
+
+## 재개 순서 (저장소 소유자)
+
+1. Claude GitHub App 을 이 저장소에 설치한다: https://github.com/apps/claude (이 저장소만 선택).
+2. 로컬에서 `claude setup-token` 으로 구독 토큰을 만들고, `gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo Maokami/smarandache-wellin-lean`
+   을 실행해 프롬프트에 붙여 넣는다. 토큰을 명령줄 인자나 파일, 대화에 남기지 않는다.
+3. 가장 작은 smoke: 이슈 #1 에 소유자 댓글 `@claude 이 이슈가 블루프린트의 어느 노드를 형식화하라는 것인지 한 문장으로 답해 줘`.
+   `Claude ask` 실행이 녹색이고 `claude[bot]` 답글이 달렸는지 `scripts/ai_status.sh` 로 확인한다.
+4. Actions 에서 `Claude literature watch` 를 수동 실행한다. 구조화 출력이 있고, 새 항목이 있으면 `lit-watch` 이슈가 열려야 한다.
+5. `Claude lemma hunter` 를 이슈 1 로 수동 실행한다. draft PR 또는 이슈의 실패 보고가 있어야 한다.
+6. 사냥꾼 PR 이 생기면 Ready for review 로 바꿔 `Claude proof review` 를 돌린다. PR 에 `claude[bot]` 리뷰 댓글이 있어야 한다.
+   머지는 사람이 승인한다.
+
+각 단계에서 녹색 Action 만으로 완료라고 보지 않는다. 출력이 있어야 완료다.
 
 첫 사냥 과제는 이슈 #1 (`cor:Q1-two` 를 IT(q) 전체 가정 아래 형식화).
 
@@ -76,4 +115,6 @@ action 이 `claude_args` 를 셸 규칙으로 토큰화하면서 변수가 빈 �
 ## 다음에 볼 것
 
 - 사냥꾼을 몇 번 수동으로 돌려 비용 (구독 사용량)·성공률·리뷰어의 지적을 기록한 뒤 주간 schedule 을 켤지 정한다.
-- 가드레일이 부족하다고 느끼면 gh-aw + API 키로 옮긴다 (조사 문서 6 절).
+- 가드레일이 부족하다고 느끼면 gh-aw 로 옮기는 것을 검토한다 (조사 문서 6 절). gh-aw 의 Claude 엔진은 구독 OAuth 토큰을 받지 않지만,
+  Anthropic API 키나 WIF 외에 Copilot 추론 경로 (`copilot/` 모델, `copilot-requests: write` 또는 `COPILOT_GITHUB_TOKEN`) 로도 쓸 수 있다
+  (gh-aw engines/claude 문서, 2026-11-06 확인). 이번 구현은 claude-code-action + 구독 토큰을 유지한다.

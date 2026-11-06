@@ -28,10 +28,23 @@ jobs:
     permissions:
       contents: read
       issues: read
+      pull-requests: read   # 출력 확인 단계 (워크플로 토큰) 용
       id-token: write
     env:
       CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
     steps:
+      # 인증 준비 확인 (값은 출력하지 않는다. secret 이 비었는지만 본다) 과 시작 시각 기록.
+      - name: Check Claude credentials
+        id: pre
+        env:
+          HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret 이 없다. Claude GitHub App 설치와 secret 등록이 필요하다 (README 의 1 회 설정)."
+            exit 1
+          fi
+          echo "start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Fetch trusted task
         id: task
         env:
@@ -109,9 +122,10 @@ jobs:
             3. 모두 통과하면 `git switch -c claude/hunt-<짧은-이름>` 으로 브랜치를 만들어 커밋하고
                `git push -u origin claude/hunt-<짧은-이름>` 한 뒤 `gh pr create --draft` 로 PR 을 연다.
                본문: "Refs #이슈번호" (Closes 금지), 새 정리 목록과 블루프린트 라벨, 새 정리의 #print axioms 출력,
-               쓴 가정 목록. 한국어로 쓴다. 그 뒤 `gh issue comment` 로 이슈에 PR 링크를 남긴다.
+               쓴 가정 목록. 한국어로 쓴다. 본문 마지막 줄에 완료 표식 [sw-done:${{ github.run_id }}.${{ github.run_attempt }}] 를 그대로 쓴다.
+               그 뒤 `gh issue comment` 로 이슈에 PR 링크를 남긴다 (이 댓글에도 같은 완료 표식).
             4. 실패하면 PR 을 열지 않는다. 이슈에 댓글로 시도한 전략, 막힌 지점, 실패가 (i) 수학적 전략의 오류인지
-               (ii) 보조명제가 커서 탐색에 실패한 것인지를 적는다.
+               (ii) 보조명제가 커서 탐색에 실패한 것인지를 적는다. 댓글 마지막 줄에 완료 표식 [sw-done:${{ github.run_id }}.${{ github.run_attempt }}] 를 그대로 쓴다.
 
             금지: AGENTS.md 의 보호 파일 수정. main 에 push. git config 변경. sorry, axiom, native_decide.
             진술을 바꿔 쉬운 문제로 만드는 것.
@@ -120,3 +134,33 @@ jobs:
             --max-turns 150
             --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git push -u origin claude/*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
             --disallowedTools "Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *)"
+
+      # green 은 결과가 아니다. 성공이려면 둘 중 하나:
+      #  (a) 이번 실행 이후 만든 claude/ 브랜치의 draft PR 로, 본문에 "Refs #이슈" 와 이번 완료 표식이 있다 (draft 가 아니면 실패).
+      #  (b) PR 이 없으면, 이슈에 이번 완료 표식이 든 claude[bot] 실패 보고 댓글이 있다.
+      - name: Verify hunt output
+        if: steps.task.outputs.issue != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.task.outputs.issue }}
+          SINCE: ${{ steps.pre.outputs.start }}
+          MARK: "[sw-done:${{ github.run_id }}.${{ github.run_attempt }}]"
+        run: |
+          set -euo pipefail
+          gh pr list -R "$GITHUB_REPOSITORY" --state all --limit 50 --json number,headRefName,createdAt,isDraft,body,url > "$RUNNER_TEMP/prs.json"
+          linked=$(jq -c --arg s "$SINCE" --arg m "$MARK" --arg r "Refs #$ISSUE" \
+            '[.[] | select((.headRefName | startswith("claude/")) and .createdAt >= $s and (.body | contains($m)) and (.body | contains($r)))]' "$RUNNER_TEMP/prs.json")
+          echo "이슈 #$ISSUE 와 연결된 새 PR: $(jq -c 'map({number, isDraft, url})' <<<"$linked")"
+          if [ "$(jq length <<<"$linked")" -gt 0 ]; then
+            if jq -e 'all(.[]; .isDraft == true)' <<<"$linked" > /dev/null; then exit 0; fi
+            echo "::error::연결된 PR 이 draft 가 아니다."
+            exit 1
+          fi
+          c=$(gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments?since=$SINCE&per_page=100" \
+                | jq --arg m "$MARK" '[.[] | select(.user.login == "claude[bot]" and (.body | contains($m)))] | length')
+          [[ "$c" =~ ^[0-9]+$ ]] || { echo "::error::댓글 수를 읽지 못했다."; exit 1; }
+          echo "완료 표식이 든 실패 보고 댓글: $c"
+          if [ "$c" -eq 0 ]; then
+            echo "::error::연결된 draft PR 도 완료 표식이 든 실패 보고도 없다."
+            exit 1
+          fi

@@ -122,10 +122,16 @@ AI 워크플로는 `anthropics/claude-code-action@v1` 과 Claude 구독 토큰�
 
 ```bash
 # 1) Claude GitHub App 설치: https://github.com/apps/claude  (이 저장소만 선택)
-# 2) 구독 토큰을 저장소 secret 으로
+# 2) 구독 토큰을 저장소 secret 으로. 토큰은 프롬프트에 붙여 넣고 명령줄·파일·대화에 남기지 않는다
 claude setup-token
 gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo Maokami/smarandache-wellin-lean
+# 3) 상태 확인: 설정 파일 / 인증 준비 / Action 결론 / 실제 출력을 따로 본다
+scripts/ai_status.sh
 ```
+
+각 AI 워크플로는 secret 이 없으면 실패하고, 실행 뒤 완료된 출력이 없으면 실패한다. 완료는 이번 실행의 표식
+`[sw-done:<run_id>.<run_attempt>]` 가 든 `claude[bot]` 답변·리뷰 요약·실패 보고, 이슈와 연결된 draft PR, 또는 검증된 문헌 감시
+JSON 으로 판단한다. 진행 상태 댓글은 세지 않는다. 재개 순서와 검증 상태는 도입 기록에 있다.
 
 보조정리 사냥꾼에게 일을 주려면 `lemma-hunt` 라벨 이슈에 형식화할 진술과 블루프린트 라벨을 적고
 Actions 탭에서 "Claude lemma hunter" 를 수동 실행한다. 사냥꾼의 PR 은 draft 로 열리고, 사람이 "Ready for review" 로
@@ -169,4 +175,5 @@ scripts/
   sw_heuristic.py   보정 확률 모형 E(a, b) 와 관측 비교
   check_blueprint.py 블루프린트 ↔ Lean 소스 ↔ Audit 대응 검사
   blueprint.sh      블루프린트 빌드와 검사
+  ai_status.sh      AI 워크플로의 설정·인증·실행 결론·실제 출력 점검 (읽기 전용)
 ```
