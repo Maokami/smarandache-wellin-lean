@@ -1,6 +1,6 @@
-import SmarandacheWellin.Defs
+import SmarandacheWellin.Audit
+import SmarandacheWellin.Avoid
 import SmarandacheWellin.Basic
 import SmarandacheWellin.Congruence
-import SmarandacheWellin.Avoid
+import SmarandacheWellin.Defs
 import SmarandacheWellin.Interval
-import SmarandacheWellin.Audit

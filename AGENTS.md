@@ -8,6 +8,7 @@
 ```bash
 lake exe cache get                      # Mathlib 은 반드시 캐시로 받는다. 콜드 빌드는 1 시간 이상 걸린다
 lake build                              # SmarandacheWellin/Audit.lean 이 모든 정리의 #print axioms 를 출력한다
+lake exe mk_all                         # 새 .lean 파일을 만들었으면 루트 SmarandacheWellin.lean 의 import 를 갱신한다
 python3 -I scripts/check_blueprint.py   # 블루프린트 ↔ Lean 소스 ↔ Audit 대응
 python3 -I scripts/check_blueprint.py --write-decls /tmp/decls && lake exe checkdecls /tmp/decls
 ```
