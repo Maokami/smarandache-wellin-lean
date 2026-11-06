@@ -75,6 +75,11 @@ claude-code-action 에는 출력 종류·개수 제한이 없으므로 아래로
 - 결과 판정: 진행 상태 댓글 하나만 남았고 완료 표식 답변은 없다. 출력 확인 단계는 건너뛰어졌고 실행은 실패다. 완료가 아니다.
 - 수정: 네 워크플로에 action 과 같은 bubblewrap 설치 단계 (Ubuntu 24.04 의 AppArmor 설정 포함) 를 넣었다.
   환경 정리와 프로세스 격리를 함께 유지한다.
+- 재시도 실행 42187527331 (커밋 00b162a): bubblewrap 설치 (`/usr/bin/bwrap`), OIDC·App 토큰 교환, Claude Code 실행
+  (`is_error: false`, 3 턴) 모두 성공. 출력 확인 단계가 완료 표식 `[sw-done:42187527331.1]` 이 든 `claude[bot]` 답변 1 개를 확인했다:
+  https://github.com/Maokami/smarandache-wellin-lean/issues/1#issuecomment-6680573869 . 답의 내용은 AGENTS.md 의 세 곳 규칙과 맞고,
+  원격 `claude/` 브랜치는 생기지 않았다 (읽기 전용 유지). 질의 워크플로의 첫 완료 결과다.
+- 남은 AI 검증: 문헌 감시, 사냥꾼, 리뷰는 아직 실행하지 않았다.
 
 ## 재개 순서 (저장소 소유자)
 
