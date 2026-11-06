@@ -438,10 +438,18 @@
   Acta Arith.~167 (2015), 261--266, arXiv:1311.7003. Shiu (2000) 의 임의 길이 문자열에서도 따른다.
 \end{proof}
 
-\begin{theorem}[문헌: Maynard 2016, Theorem 3.3 의 증명 중 식 (6.24)]
-  \label{thm:lit-Maynard}
+\begin{definition}[가정 IT-all]
+  \label{def:IT-all}
+  \lean{SW.IntervalTriplesAll}
+  \leanok
   \uses{def:IT}
   모든 소수 \(q \ge 3\) 에 대해 IT(\(q\)) 가 성립한다.
+\end{definition}
+
+\begin{theorem}[문헌: Maynard 2016, Theorem 3.3 의 증명 중 식 (6.24)]
+  \label{thm:lit-Maynard}
+  \uses{def:IT-all}
+  IT-all 이 성립한다. 곧 모든 소수 \(q \ge 3\) 에 대해 IT(\(q\)) 가 성립한다.
 \end{theorem}
 \begin{proof}
   J.~Maynard, \emph{Dense clusters of primes in subsets}, Compositio Math.~152 (2016), 1517--1554.
@@ -453,15 +461,20 @@
 
 \begin{corollary}[Q1, \(|S| = 2\), 문헌 조건부]
   \label{cor:Q1-two}
-  \uses{def:W}
-  모든 소수 \(q, r\) 에 대해 \(q \nmid W_n\) 이고 \(r \nmid W_n\) 인 \(n\) 이 무한히 많다.
+  \lean{SW.avoid_two_of_intervalTriplesAll}
+  \leanok
+  \uses{def:W, def:IT-all}
+  IT-all (정의~\ref{def:IT-all}) 이 성립하면, 모든 소수 \(q, r\) 와 모든 \(N\) 에 대해
+  \(n > N\) 이고 \(q \nmid W_n\), \(r \nmid W_n\) 인 \(n\) 이 있다. 곧 그런 \(n\) 이 무한히 많다.
+  IT-all 은 정리~\ref{thm:lit-Maynard} (Lean 밖) 이 준다.
 \end{corollary}
 \begin{proof}
-  \uses{thm:lit-Maynard, thm:two-of-IT, lem:coprime-ten, thm:one-prime}
-  \(q \ge 3\) 이면 정리~\ref{thm:lit-Maynard} 와 정리~\ref{thm:two-of-IT} (\(r\) 은 임의).
+  \leanok
+  \uses{thm:two-of-IT, lem:coprime-ten, thm:one-prime}
+  \(q \ge 3\) 이면 IT-all 에서 IT(\(q\)) 를 꺼내 정리~\ref{thm:two-of-IT} (\(r\) 은 임의).
   \(q = 2\) 이면 \(n \ge 4\) 에서 \(q \nmid W_n\) (보조정리~\ref{lem:coprime-ten}) 이므로
-  \(r\) 하나의 경우 (정리~\ref{thm:one-prime}) 로 줄어든다.
-  Lean 에서는 문헌 정리를 가정으로 두는 형태 (정리~\ref{thm:two-of-IT}) 까지만 검증했다.
+  \(r\) 하나의 경우 (정리~\ref{thm:one-prime}) 를 \(\max(N, 3)\) 에 적용한다.
+  Lean 에서는 IT-all 을 명시적 가정으로 받는다.
 \end{proof}
 
 \section{열린 문제}

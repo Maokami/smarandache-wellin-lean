@@ -68,3 +68,5 @@ import SmarandacheWellin.Interval
 #print axioms SW.digitTriples_of_intervalTriples
 #print axioms SW.avoid_two_of_interval_triples
 #print axioms SW.avoid_three_of_interval_triples
+#print axioms SW.IntervalTriplesAll
+#print axioms SW.avoid_two_of_intervalTriplesAll

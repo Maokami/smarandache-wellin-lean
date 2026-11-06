@@ -77,4 +77,28 @@ theorem avoid_three_of_interval_triples {r : ℕ} (hr : r.Prime) (h : IntervalTr
     ∃ n, N < n ∧ ¬ 3 ∣ W n ∧ ¬ r ∣ W n :=
   avoid_three_of_triples hr (sameClassTriples3_of_intervalTriples h) N
 
+/-- 가정: 모든 소수 `q ≥ 3` 에 대해 IT(q). Maynard (2016) Theorem 3.3 의 증명 중 식 (6.24) 에서 따른다
+(Lean 밖, `docs/references.md`). 이 프로젝트에서는 증명하지 않는다. -/
+def IntervalTriplesAll : Prop := ∀ q : ℕ, q.Prime → 3 ≤ q → IntervalTriples q
+
+/-- Q1, `|S| = 2`: 모든 소수 `q ≥ 3` 에 대해 IT(q) 이면, 임의의 소수 `q, r` 에 대해
+`q ∤ W n ∧ r ∤ W n` 인 `n` 이 무한히 많다. `q = 2` 는 `n ≥ 4` 에서 `W n` 이 홀수라서 `|S| = 1` 로 줄어든다. -/
+theorem avoid_two_of_intervalTriplesAll (h : IntervalTriplesAll) {q r : ℕ}
+    (hq : q.Prime) (hr : r.Prime) (N : ℕ) :
+    ∃ n, N < n ∧ ¬ q ∣ W n ∧ ¬ r ∣ W n := by
+  by_cases h3 : 3 ≤ q
+  · exact avoid_two_of_interval_triples hq hr (h q hq h3) N
+  · have hq2 : q = 2 := by
+      have := hq.two_le
+      omega
+    subst hq2
+    obtain ⟨n, hn, hrn⟩ := exists_not_dvd hr (max N 3)
+    refine ⟨n, by omega, ?_, hrn⟩
+    obtain ⟨k, rfl⟩ : ∃ k, n = k + 1 := ⟨n - 1, by omega⟩
+    have hcop : Nat.Coprime (W (k + 1)) 10 := coprime_ten_of_three_le (by omega)
+    intro h2
+    have : 2 ∣ Nat.gcd (W (k + 1)) 10 := Nat.dvd_gcd h2 (by norm_num)
+    rw [hcop] at this
+    omega
+
 end SW
