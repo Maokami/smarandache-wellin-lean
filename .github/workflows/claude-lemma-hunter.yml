@@ -1,28 +1,98 @@
-# 3 단계 (쓰기 가능 AI): 보조정리 사냥꾼. 저장소 소유자가 쓴 lemma-hunt 이슈 하나를 Lean 으로 형식화하고,
+# 3 단계 (쓰기 가능 AI): 보조정리 사냥꾼. 소유자가 쓴 lemma-hunt 이슈 하나를 Lean 으로 형식화하고,
 # lake build 와 검사가 모두 통과할 때만 draft PR 을 연다. 머지 (승인 1 필수) 와 장부 상태 변경은 사람이 한다.
+# 예약 실행 (하루 1 회) 의 작업 선택은 scripts/hunt_select.py 가 결정적으로 한다 (docs/tooling/2026-11-06-lemma-hunter-schedule.md):
+# - 열린 연구 PR (claude/hunt-*) 이 2 개 이상이면 시작하지 않는다.
+# - 소유자 작성·소유자 외 편집 없음·열린 lemma-hunt 이슈만. 열린·병합된 연구 PR 이 가리키는 이슈는 고르지 않는다.
+# - 같은 본문·같은 실행 기준 SHA (github.sha, 예약 실행은 main) 로 시작한 기록이 있으면 고르지 않는다. 기록은 비싼 작업 전에 mark job 이 남긴다.
+# - 명시적 수동 실행 (issue 입력) 은 재시도로 보고 시작 기록 규칙만 건너뛴다.
 # 안전장치:
-# - 작업 입력은 사전 단계가 소유자 작성 이슈의 제목·본문만 파일로 꺼낸다. 이슈 댓글 (누구나 쓸 수 있음) 은 읽지 않는다.
+# - AI 에게는 선택된 이슈의 번호와 본문만 파일로 준다. 이슈 댓글은 AI 에게 보이지 않는다.
 # - App 토큰은 additional_permissions 로 contents/PR/issues 쓰기 + actions 읽기에 한정한다 (workflows 쓰기 없음).
 # - 서브프로세스 환경에서 Anthropic 자격 증명을 지운다 (GitHub 토큰은 남는다).
-# 처음에는 수동 실행만 켠다. 몇 번 돌려 본 뒤 schedule 의 주석을 푼다.
 name: Claude lemma hunter
 
 on:
   workflow_dispatch:
     inputs:
       issue:
-        description: "작업할 lemma-hunt 이슈 번호 (비우면 소유자가 쓴 가장 오래된 열린 이슈)"
+        description: "작업할 lemma-hunt 이슈 번호 (재시도 지정). 비우면 예약 실행과 같은 규칙으로 고른다"
         required: false
         default: ""
-  # schedule:
-  #   - cron: "0 0 * * 3"   # 매주 수요일 09:00 KST
+  schedule:
+    - cron: "37 0 * * *"   # 매일 09:37 KST (정각 혼잡을 피한다)
 
 concurrency:
   group: lemma-hunter
   cancel-in-progress: false
 
 jobs:
+  # 작업 선택 (AI 없음, 읽기 전용). 판정할 수 없으면 실패하고 아무것도 시작하지 않는다.
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      issue: ${{ steps.select.outputs.issue }}
+      task_hash: ${{ steps.select.outputs.task_hash }}
+      task: ${{ steps.select.outputs.task }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Select task
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+          OWNER: ${{ github.repository_owner }}
+          BASE: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 -I scripts/hunt_select.py select --repo "$GITHUB_REPOSITORY" --owner "$OWNER" --base "$BASE" \
+            --issue "$ISSUE" --task-out "$RUNNER_TEMP/task.json" --github-output "$GITHUB_OUTPUT"
+          if [ -s "$RUNNER_TEMP/task.json" ]; then
+            echo "task=$(base64 -w0 < "$RUNNER_TEMP/task.json")" >> "$GITHUB_OUTPUT"
+          fi
+
+  # 시작 기록 (AI 없음, 쓰기는 issues 하나). 비싼 Lean 준비와 AI 실행 전에 남긴다. 실패하면 hunt 는 시작하지 않는다.
+  mark:
+    needs: select
+    if: needs.select.outputs.issue != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Record start
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ needs.select.outputs.issue }}
+          TASK: ${{ needs.select.outputs.task_hash }}
+          BASE: ${{ github.sha }}
+          RUN: ${{ github.run_id }}.${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python3 -I scripts/hunt_select.py record-body --task "$TASK" --base "$BASE" --outcome started \
+            --run "$RUN" --run-url "$RUN_URL" > "$RUNNER_TEMP/record.md"
+          gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/record.md"
+
   hunt:
+    needs: [select, mark]
+    if: needs.select.outputs.issue != ''
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:
@@ -45,35 +115,13 @@ jobs:
           fi
           echo "start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch trusted task
-        id: task
+      # select job 이 검증한 번호와 본문만 AI 의 작업 파일로 쓴다 (다시 조회하지 않는다).
+      - name: Write task file
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ inputs.issue }}
-          OWNER: ${{ github.repository_owner }}
-        # 소유자가 쓰고, 본문을 소유자 말고는 고친 적 없는 (editor), 열린 lemma-hunt 이슈만 받는다.
-        # 작업 파일에는 번호와 본문만 넣는다 (제목 수정은 editor 에 기록되지 않는다).
-        run: |
-          set -euo pipefail
-          if [ -z "$ISSUE" ]; then
-            ISSUE=$(gh issue list -R "$GITHUB_REPOSITORY" --label lemma-hunt --state open --author "$OWNER" --limit 200 \
-                      --json number --jq 'map(.number) | min // empty')
-          fi
-          if ! [[ "$ISSUE" =~ ^[0-9]+$ ]]; then echo "작업 없음"; exit 0; fi
-          # shellcheck disable=SC2016  # GraphQL 변수 ($o 등) 는 셸이 아니라 GitHub 가 푼다
-          gh api graphql -F o="${GITHUB_REPOSITORY%/*}" -F r="${GITHUB_REPOSITORY#*/}" -F n="$ISSUE" -f query='
-            query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){
-              number body state author{login} editor{login} lastEditedAt labels(first:20){nodes{name}}}}}' \
-            --jq '.data.repository.issue' > "$RUNNER_TEMP/issue.json"
-          jq -e --arg o "$OWNER" '
-            .author.login == $o and .state == "OPEN" and
-            (.editor == null or .editor.login == $o) and
-            any(.labels.nodes[]; .name == "lemma-hunt")' "$RUNNER_TEMP/issue.json" > /dev/null
-          jq '{number, body}' "$RUNNER_TEMP/issue.json" > "$RUNNER_TEMP/task.json"
-          echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+          TASK: ${{ needs.select.outputs.task }}
+        run: base64 -d <<<"$TASK" > "$RUNNER_TEMP/task.json"
 
       - name: Free disk space
-        if: steps.task.outputs.issue != ''
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
@@ -85,14 +133,12 @@ jobs:
           swap-storage: false
 
       - name: Checkout
-        if: steps.task.outputs.issue != ''
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Lean toolchain and Mathlib cache
-        if: steps.task.outputs.issue != ''
         uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
         with:
           build: true
@@ -100,7 +146,6 @@ jobs:
       # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 이면 Claude Code 는 bubblewrap 없이 시작하지 않는다.
       # action 은 allowed_non_write_users 가 있을 때만 설치하므로 여기서 같은 방식으로 설치한다 (action.yml 의 단계와 같다).
       - name: Install subprocess isolation (bubblewrap)
-        if: steps.task.outputs.issue != ''
         run: |
           for i in 1 2 3; do
             sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends bubblewrap socat && break
@@ -114,7 +159,6 @@ jobs:
           fi
 
       - name: Hunt
-        if: steps.task.outputs.issue != ''
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -124,7 +168,7 @@ jobs:
           prompt: |
             REPO: ${{ github.repository }}
             TASK FILE: ${{ runner.temp }}/task.json
-            ISSUE: #${{ steps.task.outputs.issue }}
+            ISSUE: #${{ needs.select.outputs.issue }}
 
             너는 이 저장소의 저자 에이전트다. AGENTS.md 를 먼저 읽고 그대로 따른다.
             작업은 TASK FILE 에 있는 이슈 하나 (번호와 본문) 뿐이다. 이슈 댓글이나 다른 이슈는 읽지 않는다.
@@ -148,24 +192,23 @@ jobs:
           claude_args: |
             --model claude-opus-5-5
             --max-turns 150
-            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git push -u origin claude/*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
+            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(lake build:*),Bash(lake env lean:*),Bash(lake exe checkdecls:*),Bash(lake exe mk_all:*),Bash(python3 -I scripts/check_blueprint.py:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/hunt-*),Bash(git push -u origin claude/hunt-*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh issue comment:*)"
             --disallowedTools "Read(./.git/**),Read(//proc/**),Bash(gh * --body-file*),Bash(gh * -F *)"
 
       # green 은 결과가 아니다. 성공이려면 둘 중 하나:
-      #  (a) 이번 실행 이후 만든 claude/ 브랜치의 draft PR 로, 본문에 "Refs #이슈" 와 이번 완료 표식이 있다 (draft 가 아니면 실패).
+      #  (a) 이번 실행 이후 만든 claude/hunt-* 브랜치의 draft PR 로, 본문에 "Refs #이슈" 와 이번 완료 표식이 있다 (draft 가 아니면 실패).
       #  (b) PR 이 없으면, 이슈에 이번 완료 표식이 든 claude[bot] 실패 보고 댓글이 있다.
       - name: Verify hunt output
-        if: steps.task.outputs.issue != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ steps.task.outputs.issue }}
+          ISSUE: ${{ needs.select.outputs.issue }}
           SINCE: ${{ steps.pre.outputs.start }}
           MARK: "[sw-done:${{ github.run_id }}.${{ github.run_attempt }}]"
         run: |
           set -euo pipefail
           gh pr list -R "$GITHUB_REPOSITORY" --state all --limit 50 --json number,headRefName,createdAt,isDraft,body,url > "$RUNNER_TEMP/prs.json"
           linked=$(jq -c --arg s "$SINCE" --arg m "$MARK" --arg r "Refs #$ISSUE" \
-            '[.[] | select((.headRefName | startswith("claude/")) and .createdAt >= $s and (.body | contains($m)) and (.body | contains($r)))]' "$RUNNER_TEMP/prs.json")
+            '[.[] | select((.headRefName | startswith("claude/hunt-")) and .createdAt >= $s and (.body | contains($m)) and (.body | contains($r)))]' "$RUNNER_TEMP/prs.json")
           echo "이슈 #$ISSUE 와 연결된 새 PR: $(jq -c 'map({number, isDraft, url})' <<<"$linked")"
           if [ "$(jq length <<<"$linked")" -gt 0 ]; then
             if jq -e 'all(.[]; .isDraft == true)' <<<"$linked" > /dev/null; then exit 0; fi
