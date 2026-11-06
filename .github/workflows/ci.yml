@@ -37,8 +37,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Mathlib 은 cache get 으로 받는다. 공리 감사는 namespace SW 의 모든 선언에 대해
+      # Mathlib 은 cache get 으로 받는다. 공리 감사는 라이브러리 SmarandacheWellin 의 모든 모듈에 선언된 모든 것에 대해
       # propext, Classical.choice, Quot.sound 밖의 공리 (sorryAx, native_decide 의 ofReduceBool, 새 axiom) 를 막는다.
+      # axiom-audit-root 는 모듈 접두사다 (기본값 = lakefile 의 라이브러리).
       - name: Build, import check, axiom audit
         uses: leanprover/lean-action@v1
         with:
@@ -46,7 +47,6 @@ jobs:
           mk_all-check: true
           axiom-audit: true
           axiom-audit-allow: "propext,Classical.choice,Quot.sound"
-          axiom-audit-root: SW
 
       - name: Blueprint ↔ Lean ↔ Audit consistency
         run: python3 -I scripts/check_blueprint.py --write-decls "$RUNNER_TEMP/lean_decls"

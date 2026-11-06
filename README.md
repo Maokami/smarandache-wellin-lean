@@ -106,7 +106,7 @@ AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGEN
 
 | 워크플로 | 단계 | AI | 트리거 | 쓸 수 있는 것 |
 | --- | --- | --- | --- | --- |
-| `ci.yml` | 1 | 없음 | push, PR | 없음. 빌드, `mk_all` 검사, namespace `SW` 전체 공리 감사, 블루프린트 대응, checkdecls, 에이전트 PR 범위 검사 |
+| `ci.yml` | 1 | 없음 | push, PR | 없음. 빌드, `mk_all` 검사, 라이브러리 전체 선언의 공리 감사, 블루프린트 대응, checkdecls, 에이전트 PR 범위 검사 |
 | `blueprint.yml` | 1 | 없음 | push, PR | GitHub Pages (main push 때만) |
 | `claude-review.yml` | 2 | Claude (구독) | PR 열림·Ready | PR 댓글 |
 | `claude-ask.yml` | 2 | Claude (구독) | 댓글의 `@claude` | 댓글. 파일 수정 금지 |
