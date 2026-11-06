@@ -8,7 +8,7 @@ name: Claude PR triage
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # 매일 09:00 KST
+    - cron: "17 */2 * * *"   # 2 시간마다 (UTC 짝수 시 17 분 = KST 01:17, 03:17, …, 23:17). 정각 혼잡을 피한다
   workflow_dispatch:
 
 concurrency:
