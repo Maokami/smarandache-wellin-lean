@@ -1,7 +1,7 @@
 # 블루프린트 (웹·PDF·의존 그래프) 빌드와 GitHub Pages 배포. leanblueprint 템플릿을 이 저장소에 맞게 고쳤다.
 # - API 문서 (doc-gen4) 는 끈다 (Mathlib 전체 문서 빌드가 길다). 필요하면 api-docs: true.
 # - Jekyll 홈페이지 대신 site/index.html 을 쓴다 (docs/ 는 연구 문서라 Jekyll 대상이 아니다).
-# - 배포는 main 에 push 할 때만. PR 에서는 빌드와 checkdecls 만 확인한다.
+# - PR 에서는 빌드와 checkdecls 만 (Pages 권한 없음). main push 때만 배포 job 이 Pages 권한을 갖는다.
 name: Blueprint
 
 on:
@@ -17,17 +17,16 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  blueprint:
-    name: Build blueprint and deploy
+  check:
+    if: github.event_name != 'push'
+    name: Build blueprint
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - name: Free disk space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
@@ -36,17 +35,56 @@ jobs:
           large-packages: false
           docker-images: false
           swap-storage: false
-
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-
+          persist-credentials: false
       - name: Build project
-        uses: leanprover/lean-action@v1
+        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
         with:
           build: true
+      - name: Blueprint (PDF, web, checkdecls)
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # main 2026-10-05
+        with:
+          blueprint: true
+          api-docs: false
+          build-page: false
+          homepage: site
+          deploy: false
 
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Build blueprint and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: https://maokami.github.io/smarandache-wellin-lean/
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build project
+        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
+        with:
+          build: true
       - name: Blueprint (PDF, web, checkdecls) and Pages
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # main 2026-10-05
         with:

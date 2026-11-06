@@ -30,9 +30,12 @@ python3 -I scripts/check_blueprint.py --write-decls /tmp/decls && lake exe check
 
 - 저자 (사람이든 에이전트든) 는 "증명했다" 고 선언하지 않는다. 판정은 CI (Lean 커널, 공리 감사, checkdecls) 와
   별도의 리뷰가 한다.
-- **에이전트가 여는 PR 은 `docs/lemma-ledger.md`, `README.md`, `docs/research-plan.md`, `lakefile.toml`,
-  `lake-manifest.json`, `lean-toolchain`, `.github/` 를 바꾸지 않는다.** 장부의 상태 열은 사람이 머지 뒤에 고친다.
-  CI 가 `claude/` 로 시작하는 브랜치에 대해 이를 강제한다.
+- **에이전트가 여는 PR 은 다음을 바꾸지 않는다:** `docs/lemma-ledger.md`, `README.md`, `docs/research-plan.md`,
+  `lakefile.toml`, `lake-manifest.json`, `lean-toolchain`, `AGENTS.md`, `CLAUDE.md`, `scripts/check_blueprint.py`,
+  `site/`, `.github/`, `.claude/`, `.mcp.json`. 장부의 상태 열은 사람이 머지 뒤에 고친다.
+  CI 가 `claude/` 브랜치, 봇이 연 PR, 소유자가 아닌 사람이 연 PR 에 대해 이를 강제한다 (이름 변경 포함).
+- main 은 ruleset 으로 보호된다: PR, CI 통과, 승인 1 건이 필요하고 저장소 관리자만 우회한다.
+  에이전트는 자기 PR 을 승인하거나 머지할 수 없다.
 - 에이전트 PR 은 draft 로 연다. 본문에 `lake build` 결과 요약과 새 정리의 `#print axioms` 출력을 붙인다.
 
 ## 수학적 맥락

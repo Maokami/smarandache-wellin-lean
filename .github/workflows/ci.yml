@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Free disk space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
@@ -36,12 +36,13 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Mathlib 은 cache get 으로 받는다. 공리 감사는 라이브러리 SmarandacheWellin 의 모든 모듈에 선언된 모든 것에 대해
       # propext, Classical.choice, Quot.sound 밖의 공리 (sorryAx, native_decide 의 ofReduceBool, 새 axiom) 를 막는다.
       # axiom-audit-root 는 모듈 접두사다 (기본값 = lakefile 의 라이브러리).
       - name: Build, import check, axiom audit
-        uses: leanprover/lean-action@v1
+        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
         with:
           build: true
           mk_all-check: true
@@ -54,14 +55,20 @@ jobs:
       - name: checkdecls (blueprint names exist in Lean)
         run: lake exe checkdecls "$RUNNER_TEMP/lean_decls"
 
-      # 에이전트 PR (claude/ 브랜치) 은 장부·README·계획·빌드 설정·워크플로를 바꿀 수 없다 (AGENTS.md).
+      # 에이전트 PR 은 규칙·장부·빌드 설정·워크플로·검사기를 바꿀 수 없다 (AGENTS.md).
+      # 브랜치 이름은 에이전트가 정할 수 있으므로 PR 작성자 (위조 불가) 로도 판단한다.
+      # 이 가드는 ci.yml 을 바꾸는 PR 에는 무력하다. 그 경우는 ruleset 의 사람 승인이 막는다.
       - name: Agent PR scope guard
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'claude/')
+        if: >-
+          github.event_name == 'pull_request' &&
+          (startsWith(github.head_ref, 'claude/') ||
+           github.event.pull_request.user.type == 'Bot' ||
+           github.event.pull_request.user.login != github.repository_owner)
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          git diff --name-only "origin/${BASE_REF}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
-          if grep -nE '^(docs/lemma-ledger\.md|README\.md|docs/research-plan\.md|lakefile\.toml|lake-manifest\.json|lean-toolchain|\.github/)' "$RUNNER_TEMP/changed.txt"; then
+          git diff --name-only --no-renames "origin/${BASE_REF}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
+          if grep -nE '^(docs/lemma-ledger\.md|README\.md|docs/research-plan\.md|lakefile\.toml|lake-manifest\.json|lean-toolchain|AGENTS\.md|CLAUDE\.md|scripts/check_blueprint\.py|site/|\.github/|\.claude/|\.mcp\.json)' "$RUNNER_TEMP/changed.txt"; then
             echo "::error::에이전트 PR 이 보호된 파일을 바꿨다 (AGENTS.md 의 저자·검증자 규칙)."
             exit 1
           fi

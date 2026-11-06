@@ -1,5 +1,10 @@
 # smarandache-wellin-lean
 
+[![CI](https://github.com/Maokami/smarandache-wellin-lean/actions/workflows/ci.yml/badge.svg)](https://github.com/Maokami/smarandache-wellin-lean/actions/workflows/ci.yml)
+[![Blueprint](https://github.com/Maokami/smarandache-wellin-lean/actions/workflows/blueprint.yml/badge.svg)](https://maokami.github.io/smarandache-wellin-lean/)
+
+블루프린트: [웹](https://maokami.github.io/smarandache-wellin-lean/blueprint/) · [의존 그래프](https://maokami.github.io/smarandache-wellin-lean/blueprint/dep_graph_document.html) · [PDF](https://maokami.github.io/smarandache-wellin-lean/blueprint.pdf)
+
 Smarandache–Wellin 소수의 무한성 추측을 Lean 4 + Mathlib 으로 연구하는 프로젝트.
 
 ## 문제
@@ -101,7 +106,7 @@ scripts/blueprint.sh serve           # http://127.0.0.1:8000 , 의존 그래프�
 
 ## 자동화 (GitHub Actions, Continuous AI 실험)
 
-결정 근거는 `docs/tooling/2026-11-06-continuous-ai-survey.md`. 원칙: Lean 커널과 결정적인 CI 가 검증자이고,
+조사는 `docs/tooling/2026-11-06-continuous-ai-survey.md`, 결정과 설치 기록은 `docs/tooling/2026-11-06-continuous-ai-adoption.md`. 원칙: Lean 커널과 결정적인 CI 가 검증자이고,
 AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGENTS.md` (Claude 는 `CLAUDE.md` 로 읽는다).
 
 | 워크플로 | 단계 | AI | 트리거 | 쓸 수 있는 것 |
@@ -109,9 +114,9 @@ AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGEN
 | `ci.yml` | 1 | 없음 | push, PR | 없음. 빌드, `mk_all` 검사, 라이브러리 전체 선언의 공리 감사, 블루프린트 대응, checkdecls, 에이전트 PR 범위 검사 |
 | `blueprint.yml` | 1 | 없음 | push, PR | GitHub Pages (main push 때만) |
 | `claude-review.yml` | 2 | Claude (구독) | PR 열림·Ready | PR 댓글 |
-| `claude-ask.yml` | 2 | Claude (구독) | 댓글의 `@claude` | 댓글. 파일 수정 금지 |
+| `claude-ask.yml` | 2 | Claude (구독) | 소유자 댓글의 `@claude` | 댓글. 파일 수정 금지 |
 | `claude-lit-watch.yml` | 2 | Claude (구독) | 매주 월요일, 수동 | `lit-watch` 이슈 하나 |
-| `claude-lemma-hunter.yml` | 3 | Claude (구독) | 수동 (처음에는) | `claude/` 브랜치와 draft PR |
+| `claude-lemma-hunter.yml` | 3 | Claude (구독) | 수동 (처음에는) | `claude/` 브랜치와 draft PR. 소유자가 쓴 이슈 본문만 읽는다 |
 
 AI 워크플로는 `anthropics/claude-code-action@v1` 과 Claude 구독 토큰을 쓴다. 쓰려면 저장소 소유자가 한 번 설정한다.
 
@@ -124,7 +129,8 @@ gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo Maokami/smarandache-wellin-lean
 
 보조정리 사냥꾼에게 일을 주려면 `lemma-hunt` 라벨 이슈에 형식화할 진술과 블루프린트 라벨을 적고
 Actions 탭에서 "Claude lemma hunter" 를 수동 실행한다. 사냥꾼의 PR 은 draft 로 열리고, 사람이 "Ready for review" 로
-바꾸면 리뷰어가 돈다. main 은 ruleset 으로 보호되어 에이전트가 직접 push 할 수 없다.
+바꾸면 리뷰어가 돈다. main 은 ruleset 으로 보호된다. PR, CI 통과, 승인 1 건이 필요하고 저장소 관리자만 우회하므로
+에이전트는 main 에 직접 push 하거나 자기 PR 을 머지할 수 없다. 보안 설계와 검토 결과는 도입 기록에 있다.
 
 ## 검증 기준
 

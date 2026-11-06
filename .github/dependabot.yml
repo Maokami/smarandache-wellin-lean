@@ -1,0 +1,7 @@
+# 워크플로가 쓰는 action 의 SHA 고정을 주간으로 갱신한다.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

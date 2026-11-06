@@ -1,4 +1,5 @@
-# 2 단계 (읽기 전용 AI): 이슈·PR 댓글에서 @claude 로 저장소에 대해 묻는다. 파일을 고치지 않는다.
+# 2 단계 (읽기 전용 AI): 저장소 소유자가 이슈·PR 댓글에서 @claude 로 묻는다. 파일을 고치지 않는다.
+# 소유자 댓글만 받고 (외부인 호출은 job 자체가 뜨지 않음), App 토큰은 contents 읽기로 한정한다.
 name: Claude ask
 
 on:
@@ -9,32 +10,40 @@ on:
   issues:
     types: [opened]
 
+concurrency:
+  group: claude-ask-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   ask:
     if: |
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
-      (github.event_name != 'issues' && contains(github.event.comment.body, '@claude'))
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude') && github.event.issue.author_association == 'OWNER') ||
+      (github.event_name != 'issues' && contains(github.event.comment.body, '@claude') && github.event.comment.author_association == 'OWNER')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
       id-token: write
       actions: read
+    env:
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Answer
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          include_comments_by_actor: "Maokami"
+          additional_permissions: |
+            contents: read
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 20
             --append-system-prompt "이 워크플로는 읽기 전용이다. 파일을 고치거나 커밋하지 말고 AGENTS.md, blueprint/src/content.tex, docs/ 를 읽고 한국어로 답한다."
             --allowedTools "Read,Glob,Grep,Bash(git log:*),Bash(git show:*)"
-            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit"
+            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*)"
