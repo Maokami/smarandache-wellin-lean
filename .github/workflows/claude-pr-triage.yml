@@ -163,9 +163,10 @@ jobs:
           set -uo pipefail
           base64 -d <<<"$SNAPSHOT" > "$RUNNER_TEMP/snapshot.json"
           printf '%s' "$AI" > "$RUNNER_TEMP/ai.json"
+          # GitHub runner의 bash -e에서도 stale(3)을 아래에서 처리한다.
+          rc=0
           python3 -I scripts/pr_triage.py publish --repo "$GITHUB_REPOSITORY" \
-            --snapshot "$RUNNER_TEMP/snapshot.json" --ai "$RUNNER_TEMP/ai.json" --run-url "$RUN_URL"
-          rc=$?
+            --snapshot "$RUNNER_TEMP/snapshot.json" --ai "$RUNNER_TEMP/ai.json" --run-url "$RUN_URL" || rc=$?
           if [ "$rc" -eq 3 ]; then
             echo "낡은 스냅샷이라 게시하지 않았다. 다음 실행이 다시 수집한다."
             exit 0
