@@ -59,6 +59,7 @@ n = 1, 2, 4, 128, 174, 342, 435, 1429
 | 10^e ≤ n < 10^{e+1} ⇒ n 은 e+1 자리 | `digitsLen_eq` | `Interval.lean` |
 | IT(q) (큰 x 마다 [x, 3x] 에 같은 류의 연속 소수 세 개) ⇒ Hd(q), IT(3) ⇒ H3 | `digitTriples_of_intervalTriples`, `sameClassTriples3_of_intervalTriples` | `Interval.lean` |
 | IT(q) ⇒ Q1({q, r}) | `avoid_two_of_interval_triples`, `avoid_three_of_interval_triples` | `Interval.lean` |
+| IT-all (모든 소수 q ≥ 3 의 IT(q)) ⇒ 임의의 소수 q, r 를 동시에 피하는 n 무한 | `IntervalTriplesAll`, `avoid_two_of_intervalTriplesAll` | `Interval.lean` |
 
 미해결 보조명제와 그 상태는 `docs/lemma-ledger.md` 에 기록한다.
 
@@ -113,10 +114,11 @@ AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGEN
 | --- | --- | --- | --- | --- |
 | `ci.yml` | 1 | 없음 | push, PR | 없음. 빌드, `mk_all` 검사, 라이브러리 전체 선언의 공리 감사, 블루프린트 대응, checkdecls, 에이전트 PR 범위 검사 |
 | `blueprint.yml` | 1 | 없음 | push, PR | GitHub Pages (main push 때만) |
-| `claude-review.yml` | 2 | Claude (구독) | PR 열림·Ready | PR 댓글 |
+| `claude-review.yml` | 2 | Claude (구독) | PR 열림·Ready·수정 | PR 댓글 |
 | `claude-ask.yml` | 2 | Claude (구독) | 소유자 댓글의 `@claude` | 댓글. 파일 수정 금지 |
 | `claude-lit-watch.yml` | 2 | Claude (구독) | 매주 월요일, 수동 | `lit-watch` 이슈 하나 |
-| `claude-lemma-hunter.yml` | 3 | Claude (구독) | 수동 (처음에는) | `claude/` 브랜치와 draft PR. 소유자가 쓴 이슈 본문만 읽는다 |
+| `claude-pr-triage.yml` | 2 | Claude (변화가 있을 때만) | 2 시간마다, 수동 | 보고서 이슈 하나와 관리 라벨. PR 병합·종료는 하지 않는다 |
+| `claude-lemma-hunter.yml` | 3 | Claude (구독) | 매일 09:37 KST, 수동 | `claude/hunt-*` 브랜치와 draft PR. 소유자 과제만 선택하고 중복·검토 대기·같은 조건 재시도를 제한한다 |
 
 AI 워크플로는 `anthropics/claude-code-action@v1` 과 Claude 구독 토큰을 쓴다. 쓰려면 저장소 소유자가 한 번 설정한다.
 
@@ -129,9 +131,10 @@ gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo Maokami/smarandache-wellin-lean
 scripts/ai_status.sh
 ```
 
-각 AI 워크플로는 secret 이 없으면 실패하고, 실행 뒤 완료된 출력이 없으면 실패한다. 완료는 이번 실행의 표식
+AI 를 실행하는 job 은 secret 이 없으면 실패하고, 실행 뒤 완료된 출력이 없으면 실패한다. 완료는 이번 실행의 표식
 `[sw-done:<run_id>.<run_attempt>]` 가 든 `claude[bot]` 답변·리뷰 요약·실패 보고, 이슈와 연결된 draft PR, 또는 검증된 문헌 감시
-JSON 으로 판단한다. 진행 상태 댓글은 세지 않는다. 재개 순서와 검증 상태는 도입 기록에 있다.
+JSON 으로 판단한다. 진행 상태 댓글은 세지 않는다. PR 정리는 검증한 JSON 으로 봇 소유 보고서 이슈와 라벨을 갱신한다.
+변화가 없거나 사냥 과제가 없으면 AI 를 호출하지 않고 끝난다. 재개 순서와 검증 상태는 도입 기록에 있다.
 
 보조정리 사냥꾼에게 일을 주려면 `lemma-hunt` 라벨 이슈에 형식화할 진술과 블루프린트 라벨을 적고
 Actions 탭에서 "Claude lemma hunter" 를 수동 실행한다. 사냥꾼의 PR 은 draft 로 열리고, 사람이 "Ready for review" 로

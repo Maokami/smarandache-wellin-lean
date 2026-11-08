@@ -27,6 +27,8 @@
 | C8 | pₙ₊₁ ≡ pₙ₊₂ (mod q), q ∤ pₙ₊₁, q ∣ Bₙ ⇒ q ∣ 10^{d(pₙ₊₂)} + 1. 소수 q 는 10^d + 1 과 10^{d+1} + 1 을 동시에 못 나눈다 | Lean 검증 | 없음 | 같은 류의 쌍에서 블록 조건을 자릿수 조건으로 바꿈 | Bₙ ≡ pₙ₊₁(10^d + 1). 둘 다 나누면 q ∣ 9, q = 3 인데 3 ∤ 10^d + 1 | `dvd_pow_add_one_of_dvd_B`, `not_three_dvd_pow_add_one`, `not_dvd_pow_add_one_both` |
 | C9 | Q1, S = {q, r}: Hd(q) ⇒ (q ∤ Wₙ ∧ r ∤ Wₙ 인 n 이 무한), q, r 임의의 소수 | Lean 검증 (조건부) | Hd(q) | \|S\| = 2 전체를 구간 판 Shiu 정리 하나로 환원 | 덮개 아래서 d 자리 세 쌍은 q ∣ 10^d + 1, d+1 자리 세 쌍은 q ∣ 10^{d+1} + 1 을 주어 C8 과 모순 | `dvd_pow_add_one_of_cover`, `avoid_two_of_digit_triples` |
 
+| Q1-two | IT-all 이면 모든 소수 q, r 와 모든 N 에 대해 N < n, q ∤ Wₙ, r ∤ Wₙ 인 n 이 있다 | Lean 검증 (조건부) | `IntervalTriplesAll` (모든 소수 q ≥ 3 에 대한 IT(q)) | \|S\| = 2 전체의 조건부 결론을 한 선언으로 연결 | q ≥ 3 은 C9 의 구간 판 환원, q = 2 는 C3·C5. IT-all 자체는 Lean 밖의 가정이며 최종 소수 무한성 추측은 미해결 | `avoid_two_of_intervalTriplesAll`, blueprint `cor:Q1-two`. PR #4 head `a17c050` 의 CI·Blueprint 통과 후 병합 |
+
 ## 미해결
 
 | ID | 명제 | 상태 | 가정 | 역할 | 실패 이유·장애물 | 근거 |

@@ -7,7 +7,7 @@
 | 항목 | 결정 | 이유·대가 |
 | --- | --- | --- |
 | 저장소 | 공개 (`github.com/Maokami/smarandache-wellin-lean`) | Actions·Pages 무료, 4 vCPU 러너. 커밋 주소는 GitHub noreply 로 바꾼 뒤 공개했다 |
-| AI 엔진 | `anthropics/claude-code-action@v1` + Claude 구독 토큰 (`CLAUDE_CODE_OAUTH_TOKEN`) | API 과금이 없다. 대신 gh-aw 의 safe-outputs·방화벽·threat detection 이 없다 |
+| AI 엔진 | `anthropics/claude-code-action@v1` + Claude 구독 토큰 (`CLAUDE_CODE_OAUTH_TOKEN`) | 기존 구독 한도를 공유한다. 계정 청구 내역은 확인하지 않았다. gh-aw 의 safe-outputs·방화벽·threat detection 은 기본 제공되지 않는다 |
 | 블루프린트 이름 검사 | 공식 `checkdecls` 를 의존성으로 추가 (커밋 고정) | leanblueprint 표준 CI (docgen-action) 와 같은 검사 |
 
 ## gh-aw 가드레일을 대신하는 것
@@ -35,7 +35,8 @@ claude-code-action 에는 출력 종류·개수 제한이 없으므로 아래로
 
 ## 깔린 것과 검증 상태 (2026-11-06)
 
-두 층을 나눠 적는다. 보호 장치와 CI 는 실행으로 확인했고, AI 결과는 아직 한 번도 확인하지 못했다.
+보호 장치·CI 와 AI 결과를 워크플로별로 나눠 적는다. 이 절은 11월 6일 실험 기록이고,
+정기 실행 활성화와 후속 실검증은 아래 11월 8일 기록을 따른다.
 
 **보호 장치와 CI (확인됨).**
 
@@ -52,10 +53,15 @@ App 토큰 교환은 실행 로그로 확인했다.
 
 | 워크플로 | 실동작 | 근거 |
 | --- | --- | --- |
-| `claude-ask.yml` | 검증됨 (읽기 전용 smoke 1 회) | 실행 42187527331, 완료 표식 답변 https://github.com/Maokami/smarandache-wellin-lean/issues/1#issuecomment-6680573869 |
-| `claude-review.yml` | 미검증 | 설정·인증 준비만. 실제 리뷰 요약 댓글 없음 |
-| `claude-lit-watch.yml` | 미검증 | 실행 없음 |
-| `claude-lemma-hunter.yml` | 미검증 | 실행 없음 |
+| `claude-ask.yml` | 검증됨 | 실행 42187527331, 완료 표식 답변 https://github.com/Maokami/smarandache-wellin-lean/issues/1#issuecomment-6680573869 |
+| `claude-lit-watch.yml` | 검증됨 (create = false 경로만) | 실행 42192298875: 검색어 4 개, 후보 9 개 (판정·이유 로그), create = false. 새 이슈를 여는 create = true 경로는 실동작 미검증. 첫 실행 42191918521 은 검색 근거가 로그에 없어 근거 필드를 필수로 바꿨다 |
+| `claude-lemma-hunter.yml` | 검증됨 | 실행 42192527645 (28 턴): 이슈 #1 과 연결된 draft PR #4 (`cor:Q1-two` 를 `IntervalTriplesAll` 가정 아래 형식화), 이슈에 표식 댓글. PR CI 는 사냥꾼 head `c86ff4f` 기준 CI 42193126139·Blueprint 42193125851 성공 (공리 감사 135 선언). 리뷰 반영 head `a17c050` 의 CI 42194898237·Blueprint 42194898358 도 성공 |
+| `claude-review.yml` | 검증됨 | 실행 42193975924 (13 턴): PR #4 에 표식 요약 댓글 https://github.com/Maokami/smarandache-wellin-lean/pull/4#issuecomment-6681510701 과 인라인 1 개 |
+
+리뷰는 진짜 결함 하나 (`\leanok` 증명의 `\uses` 에 Lean 밖 노드) 와 오탐 하나 ("draft 가 아니다": 리뷰는 사람이 Ready 로 바꿀 때 돈다) 를
+냈다. 결함은 PR 에서 고쳤다 (`a17c050`, 리뷰 대상이던 `c86ff4f` 에서 blueprint 한 줄만 바꿈). 오탐에 대해서는 리뷰 프롬프트를 보완했으며,
+다음 실제 리뷰에서 효과를 확인해야 한다. 실행 로그의 `total_cost_usd` 합계는 약 $1.7 이다. 이것은 API 단가로 환산한 추정값이며
+실제 청구액을 뜻하지 않는다.
 
 예전에 Dependabot PR 에서 돈 리뷰 실행 하나는 출력 없이 녹색으로 끝났다 (인증 전). 그래서 각 워크플로에 두 단계를 넣었다.
 
@@ -87,7 +93,7 @@ App 토큰 교환은 실행 로그로 확인했다.
   (`is_error: false`, 3 턴) 모두 성공. 출력 확인 단계가 완료 표식 `[sw-done:42187527331.1]` 이 든 `claude[bot]` 답변 1 개를 확인했다:
   https://github.com/Maokami/smarandache-wellin-lean/issues/1#issuecomment-6680573869 . 답의 내용은 AGENTS.md 의 세 곳 규칙과 맞고,
   원격 `claude/` 브랜치는 생기지 않았다 (읽기 전용 유지). 질의 워크플로의 첫 완료 결과다.
-- 남은 AI 검증: 문헌 감시, 사냥꾼, 리뷰는 아직 실행하지 않았다.
+- 이어서 문헌 감시, 사냥꾼, 리뷰를 차례로 검증했다 (위 표).
 
 ## 재개 순서 (저장소 소유자)
 
@@ -134,9 +140,43 @@ action 이 `claude_args` 를 셸 규칙으로 토큰화하면서 변수가 빈 �
 - lean-action 의 `axiom-audit-root` 는 namespace 가 아니라 모듈 접두사다. 기본값 (라이브러리 이름) 을 쓴다.
 - 짧은 간격으로 push 하면 블루프린트 실행이 `concurrency` 로 취소된다. 한 번에 모아서 push 한다.
 
-## 다음에 볼 것
+## 다음에 볼 것 (11월 6일 당시)
 
 - 사냥꾼을 몇 번 수동으로 돌려 비용 (구독 사용량)·성공률·리뷰어의 지적을 기록한 뒤 주간 schedule 을 켤지 정한다.
 - 가드레일이 부족하다고 느끼면 gh-aw 로 옮기는 것을 검토한다 (조사 문서 6 절). gh-aw 의 Claude 엔진은 구독 OAuth 토큰을 받지 않지만,
   Anthropic API 키나 WIF 외에 Copilot 추론 경로 (`copilot/` 모델, `copilot-requests: write` 또는 `COPILOT_GITHUB_TOKEN`) 로도 쓸 수 있다
   (gh-aw engines/claude 문서, 2026-11-06 확인). 이번 구현은 claude-code-action + 구독 토큰을 유지한다.
+
+## 운영 반영 (2026-11-08)
+
+소유자가 Continuous AI 실험을 위해 주 에이전트의 직접 PR 병합을 명시적으로 승인했다.
+주 에이전트가 아래 PR 의 정확한 head 와 CI 를 확인하고 소유자 계정으로 반영했다.
+`protect-main` ruleset 이나 GitHub App 권한은 바꾸지 않았으며, 사냥꾼의 자기 승인·병합 금지는 유지한다.
+
+- PR #5 (`b29c5c8`) 와 #6 (`a637a68`): 각 head 의 CI·Blueprint 성공 뒤 병합했다.
+  PR 정리는 2 시간마다 (`17 */2 * * *`), 사냥꾼은 매일 09:37 KST (`37 0 * * *`) 실행된다.
+  문헌 감시는 기존 주간 실행을 유지한다.
+- 사냥꾼 첫 예약 규칙 수동 실행 [42441990717](https://github.com/Maokami/smarandache-wellin-lean/actions/runs/42441990717):
+  `#1 건너뜀: 연결된 연구 PR #4 (open)`, `고를 작업 없음` 을 확인했다. select 성공, mark·hunt 는 skipped 였다.
+  새 mark → hunt 연결은 아직 실제 과제를 골라 실행한 것은 아니다. 선택·시도 표식 규칙은 단위 시험으로 확인했다.
+- 보고서 첫 실행 [42441988155](https://github.com/Maokami/smarandache-wellin-lean/actions/runs/42441988155):
+  Claude 의 구조화 요약은 성공했다. GitHub 의 mergeable 재계산으로 수집한 사실이 바뀌어 게시 전에 안전 중단했고,
+  보고서·라벨은 쓰지 않았다. 다만 runner 의 `bash -e` 가 종료 코드 3 뒤의 처리를 막아 step 이 실패했다.
+  PR #7 (`e30828c`) 에서 `python ... || rc=$?` 로 포착하고, 실제 workflow shell 을 `bash -e` 로 실행하는
+  회귀 시험을 넣었다. 수정 전 stale 사례 실패, 수정 뒤 0→0·3→0·7→7 통과. 자동화 시험 46 개가 로컬과 CI 에서 통과했다.
+- 수정 branch 의 실행 42442233778 은 Claude Action 의 "기본 브랜치와 workflow 내용이 같아야 한다" 검증으로 건너뛰어졌다.
+  구조화 출력이 비었으므로 후속 검증이 실패했다. 모델이나 JSON schema 의 실패로 판정하지 않는다.
+  수정본의 실검증은 main 에 반영한 뒤 수행한다.
+- PR #4 (`a17c050`): Lean·Audit·blueprint 대응을 소스로 검토하고 해당 head 의 CI·Blueprint 와
+  `[propext, Classical.choice, Quot.sound]` 공리 출력을 확인한 뒤 병합했다. 이슈 #1 을 완료로 닫았다.
+  `IntervalTriplesAll` 을 받는 조건부 `avoid_two_of_intervalTriplesAll` 의 반영이며, 문헌 가정 자체나 최종 추측의 증명이 아니다.
+- Pi 설정은 [Maokami/picluster PR #8](https://github.com/Maokami/picluster/pull/8) 로 반영했다.
+  정확한 head `c5b964e` 에서 원격 단위 시험 20 개가 통과했고, 두 worker 의 실제 격리·NFS 저장·결과 회수와
+  고정 소스의 Mac 출력 일치는 11월 7일 검증 기록에 있다. Pi 계산은 `finite_computation`, `proof: false` 다.
+- 리뷰 workflow 는 Ready 전환 자체를 draft 위반으로 지적하지 않도록 event 를 전달하고,
+  non-draft PR 의 새 commit (`synchronize`) 에도 실행하도록 한다. 동시 실행 취소와 기존 턴·시간 상한은 유지한다.
+
+main 재실행 [42442726456](https://github.com/Maokami/smarandache-wellin-lean/actions/runs/42442726456) 에서는
+수집·요약 뒤 다시 사실이 바뀌어 게시를 건너뛰었다. 이번에는 코드 3을 처리해 성공으로 끝났으며,
+아직 보고서가 생긴 것으로 세지 않는다. 실제 게시 여부와 최신 현황은 `Claude PR triage` 실행의 publish 로그 및
+`pr-triage/report` 라벨의 봇 소유 이슈를 확인한다.
