@@ -422,6 +422,106 @@
   보조정리~\ref{lem:IT-Hd} 와 정리~\ref{thm:two-of-digit}. \(q = 3\) 판은 보조정리~\ref{lem:IT-Hd} 와 정리~\ref{thm:three-of-triples}.
 \end{proof}
 
+\section{소수 셋: 연속 소수 세 개의 창 조건}
+
+이 절의 창 조건 WB3 는 \(|S| = 3\) 에 대한 하나의 충분조건일 뿐이다. IT-all 에서 WB3 가 따른다고 주장하지 않고,
+\(3 \notin \{q, r, s\}\) 일 때 WB3 가 성립한다고도 주장하지 않는다. 아래의 mod 3 장애물은
+\(3 \in \{q, r, s\}\) 이면 \emph{이 충분조건} 이 성립할 수 없음을 보일 뿐, 그때 Q1 이 거짓이라거나
+다른 방법이 불가능하다는 뜻이 아니다.
+
+\begin{definition}[세 소수 블록]
+  \label{def:B3}
+  \lean{SW.B3}
+  \leanok
+  \uses{def:B, def:digitsLen}
+  \(B^{(3)}_n = 10^{\dig(p_{n+3})} B_n + p_{n+3}\). 연속한 세 소수 \(p_{n+1}, p_{n+2}, p_{n+3}\) 을 이어 붙인 수다.
+\end{definition}
+
+\begin{lemma}[세 칸 점화식]
+  \label{lem:W-add-three}
+  \lean{SW.W_add_three}
+  \leanok
+  \uses{def:W, def:B3}
+  \(W_{n+3} = 10^{\dig(p_{n+3}) + \dig(p_{n+2}) + \dig(p_{n+1})} W_n + B^{(3)}_n\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:W-rec, lem:W-add-two}
+  보조정리~\ref{lem:W-add-two} 의 점화식에 한 칸 점화식을 한 번 더 쓴다.
+\end{proof}
+
+\begin{lemma}[세 칸 가분성]
+  \label{lem:dvd-add-three}
+  \lean{SW.dvd_add_three_iff}
+  \leanok
+  \uses{def:W, def:B3}
+  \(q \mid W_n\) 이면 \(q \mid W_{n+3} \iff q \mid B^{(3)}_n\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:W-add-three}
+  보조정리~\ref{lem:W-add-three} 에서 첫 항이 \(q\) 의 배수다.
+\end{proof}
+
+\begin{definition}[가정 WB3(\(q, r, s\))]
+  \label{def:WB3}
+  \lean{SW.WindowBlocks3}
+  \leanok
+  \uses{def:B, def:B3}
+  모든 \(M\) 에 대해 \(M < n\) 인 \(n\) 이 있어, 모든 \(t \in \{q, r, s\}\) 에 대해
+  \(t \nmid B_n\), \(t \nmid B_{n+1}\), \(t \nmid B^{(3)}_n\) 이다.
+  연속 소수 \(p_{n+1}, p_{n+2}, p_{n+3}\) 에 관한 명제이며 증명하지 않은 가정이다.
+\end{definition}
+
+\begin{theorem}[WB3 에서 Q1, \(S = \{q, r, s\}\)]
+  \label{thm:three-of-window}
+  \lean{SW.avoid_three_of_windowBlocks3}
+  \leanok
+  \uses{def:WB3, def:W}
+  소수 \(q, r, s\) 에 대해 WB3(\(q, r, s\)) 가 성립하면, 모든 \(N\) 에 대해 \(N < n\) 이고
+  \(q \nmid W_n\), \(r \nmid W_n\), \(s \nmid W_n\) 인 \(n\) 이 있다.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{lem:not-dvd-succ, lem:W-add-two, lem:dvd-add-three, lem:lt-nth-prime}
+  그런 \(n\) 이 없다고 하자. WB3 를 \(\max(N, q, r, s)\) 에 적용해 \(n\) 을 얻는다.
+  \(q, r, s \le n\) 이므로 각 \(t \in \{q, r, s\}\) 는 \(p_{n+1}, p_{n+2}, p_{n+3}\) 과 다르고,
+  보조정리~\ref{lem:not-dvd-succ} 에 의해 이웃한 두 항을 함께 나누지 못한다. 거리 2 인 두 항
+  (\(W_n, W_{n+2}\) 또는 \(W_{n+1}, W_{n+3}\)) 을 함께 나누면 보조정리~\ref{lem:W-add-two} 로
+  \(t \mid B_n\) 또는 \(t \mid B_{n+1}\), 거리 3 인 \(W_n, W_{n+3}\) 을 함께 나누면
+  보조정리~\ref{lem:dvd-add-three} 로 \(t \mid B^{(3)}_n\) 이 되어 WB3 와 모순이다.
+  따라서 각 소수는 \(W_n, \dots, W_{n+3}\) 중 많아야 한 항을 나누고, 세 소수로 네 항을 덮을 수 없다.
+  소수들이 서로 다르다는 가정은 쓰지 않는다.
+\end{proof}
+
+\begin{lemma}[mod 3 장애물]
+  \label{lem:WB3-three}
+  \lean{SW.three_dvd_B_or_B_succ_or_B3}
+  \leanok
+  \uses{def:B, def:B3}
+  \(n \ge 3\) 이면 \(3 \mid B_n\) 또는 \(3 \mid B_{n+1}\) 또는 \(3 \mid B^{(3)}_n\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:three-B, lem:lt-nth-prime}
+  \(10 \equiv 1 \pmod 3\) 이므로 \(B_n \equiv p_{n+1} + p_{n+2}\), \(B_{n+1} \equiv p_{n+2} + p_{n+3}\),
+  \(B^{(3)}_n \equiv p_{n+1} + p_{n+2} + p_{n+3} \pmod 3\). \(n \ge 3\) 이면 세 소수 모두 \(3\) 과 서로소라
+  나머지가 \(1\) 또는 \(2\) 다. 이웃한 두 나머지가 다르면 그 합이, 셋이 모두 같으면 세 수의 합이 \(3\) 의 배수다.
+\end{proof}
+
+\begin{corollary}[\(3\) 을 포함하면 WB3 는 거짓]
+  \label{cor:not-WB3-three}
+  \lean{SW.not_windowBlocks3_of_three}
+  \leanok
+  \uses{def:WB3}
+  \(3 = q\) 또는 \(3 = r\) 또는 \(3 = s\) 이면 WB3(\(q, r, s\)) 는 성립하지 않는다.
+\end{corollary}
+\begin{proof}
+  \leanok
+  \uses{lem:WB3-three}
+  WB3 를 \(M = 3\) 에 적용해 얻은 \(n > 3\) 에서 \(t = 3\) 을 꺼내면 보조정리~\ref{lem:WB3-three} 와 모순이다.
+\end{proof}
+
 \section{문헌의 정리 (Lean 밖)}
 
 다음 두 정리는 Maynard 체에 기반한 깊은 결과이며 Mathlib 에 없다. 이 프로젝트는 이들을 형식화하지 않고,
