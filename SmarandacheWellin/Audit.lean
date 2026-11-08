@@ -59,6 +59,13 @@ import SmarandacheWellin.Interval
 #print axioms SW.not_dvd_pow_add_one_both
 #print axioms SW.dvd_pow_add_one_of_cover
 #print axioms SW.avoid_two_of_digit_triples
+#print axioms SW.B3
+#print axioms SW.W_add_three
+#print axioms SW.dvd_add_three_iff
+#print axioms SW.WindowBlocks3
+#print axioms SW.avoid_three_of_windowBlocks3
+#print axioms SW.three_dvd_B_or_B_succ_or_B3
+#print axioms SW.not_windowBlocks3_of_three
 
 -- Interval
 #print axioms SW.digitsLen_eq
