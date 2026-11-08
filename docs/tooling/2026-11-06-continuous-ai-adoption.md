@@ -180,3 +180,7 @@ main 재실행 [42442726456](https://github.com/Maokami/smarandache-wellin-lean/
 수집·요약 뒤 다시 사실이 바뀌어 게시를 건너뛰었다. 이번에는 코드 3을 처리해 성공으로 끝났으며,
 아직 보고서가 생긴 것으로 세지 않는다. 실제 게시 여부와 최신 현황은 `Claude PR triage` 실행의 publish 로그 및
 `pr-triage/report` 라벨의 봇 소유 이슈를 확인한다.
+
+main 실행 42442916026 은 수집·요약 뒤 PR 라벨 추가에서 HTTP 403 으로 끝났다 (보고서 이슈는 만들지 못함).
+라벨 정의 생성은 성공했지만, PR 자체의 라벨 변경에는 publish job 의 `pull-requests: write` 가 필요했다.
+이를 게시 job 에만 추가한다. Claude 요약의 읽기 권한과 GitHub App 권한은 바꾸지 않는다.
