@@ -77,3 +77,10 @@ import SmarandacheWellin.Interval
 #print axioms SW.avoid_three_of_interval_triples
 #print axioms SW.IntervalTriplesAll
 #print axioms SW.avoid_two_of_intervalTriplesAll
+#print axioms SW.IntervalOneRuns
+#print axioms SW.IntervalOneRunsAll
+#print axioms SW.W_add_modEq_of_run
+#print axioms SW.exists_add_mod_eq_one
+#print axioms SW.not_dvd_of_mod_eq_one
+#print axioms SW.not_dvd_W_of_two_or_five
+#print axioms SW.avoid_finset_of_intervalOneRunsAll

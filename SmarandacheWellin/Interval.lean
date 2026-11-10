@@ -101,4 +101,140 @@ theorem avoid_two_of_intervalTriplesAll (h : IntervalTriplesAll) {q r : ℕ}
     rw [hcop] at this
     omega
 
+/-! ### 류 1 의 구간 소수 런에서 일반 Q1
+
+가정 `IntervalOneRuns m`: 충분히 큰 모든 `x` 에 대해 `[x, 3x]` 안에 연속 소수 `m` 개가 모두 `≡ 1 (mod m)`.
+`10^d ≡ 1 (mod m)` 인 `d` 자리 소수가 `1 (mod m)` 이면, 그 소수를 붙이는 단계는 mod `m` 에서 `+1` 이다.
+`m` 단계 동안 `W` 의 나머지는 모든 류를 지나므로 그중 `1` 인 항이 있고, 그 항은 `m` 의 어느 소인수로도 나뉘지 않는다.
+-/
+
+/-- 가정 (류 1 의 구간 런): 어떤 `x₀` 가 있어 `x ≥ x₀` 이면 `x ≤ p_{n+1}, …, p_{n+m} ≤ 3x` 이고
+모두 `≡ 1 (mod m)` 인 `n` 이 있다. Maynard (2016) 에서 따르는 것으로 보는 외부 가정이며
+(`docs/literature/2026-11-11-maynard-general-q1.md`), 이 프로젝트에서는 증명하지 않는다. -/
+def IntervalOneRuns (m : ℕ) : Prop :=
+  ∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x →
+    ∃ n : ℕ, ∀ j : ℕ, j < m →
+      x ≤ Nat.nth Nat.Prime (n + j) ∧
+      Nat.nth Nat.Prime (n + j) ≤ 3 * x ∧
+      Nat.nth Nat.Prime (n + j) ≡ 1 [MOD m]
+
+/-- 가정: `10` 과 서로소인 모든 `m ≥ 2` 에 대해 `IntervalOneRuns m`. 증명하지 않는다. -/
+def IntervalOneRunsAll : Prop :=
+  ∀ m : ℕ, 2 ≤ m → m.Coprime 10 → IntervalOneRuns m
+
+/-- 런 위의 합동 전이: `10^d ≡ 1 (mod m)` 이고 `p_{n+1}, …, p_{n+k}` 가 모두 `d` 자리이며
+`≡ 1 (mod m)` 이면 `W (n + k) ≡ W n + k (mod m)`. -/
+theorem W_add_modEq_of_run {m d n k : ℕ} (h10 : 10 ^ d ≡ 1 [MOD m])
+    (hrun : ∀ i, i < k →
+      digitsLen (Nat.nth Nat.Prime (n + i)) = d ∧ Nat.nth Nat.Prime (n + i) ≡ 1 [MOD m]) :
+    W (n + k) ≡ W n + k [MOD m] := by
+  induction k with
+  | zero => simp [Nat.ModEq]
+  | succ k ih =>
+    have ih' := ih (fun i hi => hrun i (by omega))
+    obtain ⟨hd, hp⟩ := hrun k (by omega)
+    rw [← add_assoc, W_succ, hd]
+    have := (h10.mul ih').add hp
+    simpa [add_assoc] using this
+
+/-- `m ≥ 2` 이면 임의의 `a` 에 대해 `(a + j) mod m = 1` 인 `j < m` 이 있다. -/
+theorem exists_add_mod_eq_one (a : ℕ) {m : ℕ} (hm : 2 ≤ m) : ∃ j, j < m ∧ (a + j) % m = 1 := by
+  have hr := Nat.mod_lt a (by omega : 0 < m)
+  have ha := Nat.div_add_mod a m
+  by_cases h1 : a % m ≤ 1
+  · refine ⟨1 - a % m, by omega, ?_⟩
+    have : a + (1 - a % m) = 1 + m * (a / m) := by omega
+    rw [this, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+  · refine ⟨m + 1 - a % m, by omega, ?_⟩
+    have : a + (m + 1 - a % m) = 1 + m * (a / m + 1) := by
+      rw [Nat.mul_add, mul_one]; omega
+    rw [this, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+
+/-- 소수 `q ∣ m` 이고 `a mod m = 1` 이면 `q ∤ a`. -/
+theorem not_dvd_of_mod_eq_one {q m a : ℕ} (hq : q.Prime) (hqm : q ∣ m) (ha : a % m = 1) :
+    ¬ q ∣ a := by
+  intro hqa
+  have : q ∣ a % m := (Nat.dvd_mod_iff hqm).mpr hqa
+  rw [ha] at this
+  exact hq.one_lt.ne' (Nat.dvd_one.mp this)
+
+/-- `n ≥ 4` 이면 `2 ∤ W n` 이고 `5 ∤ W n`. -/
+theorem not_dvd_W_of_two_or_five {q n : ℕ} (hq : q = 2 ∨ q = 5) (hn : 4 ≤ n) : ¬ q ∣ W n := by
+  obtain ⟨k, rfl⟩ : ∃ k, n = k + 1 := ⟨n - 1, by omega⟩
+  have hcop : Nat.Coprime (W (k + 1)) 10 := coprime_ten_of_three_le (by omega)
+  intro h
+  have h10 : q ∣ 10 := by rcases hq with rfl | rfl <;> norm_num
+  have : q ∣ Nat.gcd (W (k + 1)) 10 := Nat.dvd_gcd h h10
+  rw [hcop] at this
+  rcases hq with rfl | rfl <;> omega
+
+/-- Q1, 일반 유한 집합 (외부 가정 조건부): `IntervalOneRunsAll` 이면 임의의 유한 소수 집합 `S` 와 `N` 에 대해
+`N < n` 이고 `S` 의 어느 원소도 `W n` 을 나누지 않는 `n` 이 있다.
+`m = 3 · ∏_{q ∈ S \ {2,5}} q` 로 잡는다 (`3` 을 곱해 `m ≥ 3` 을 보장한다). -/
+theorem avoid_finset_of_intervalOneRunsAll
+    (h : IntervalOneRunsAll) (S : Finset ℕ)
+    (hS : ∀ q ∈ S, q.Prime) (N : ℕ) :
+    ∃ n : ℕ, N < n ∧ ∀ q ∈ S, ¬ q ∣ W n := by
+  classical
+  set T := S.filter (fun q => q ≠ 2 ∧ q ≠ 5) with hT
+  set m := 3 * ∏ q ∈ T, q with hm
+  have hTcop : Nat.Coprime (∏ q ∈ T, q) 10 := by
+    apply Nat.Coprime.prod_left
+    intro q hq
+    rw [hT, Finset.mem_filter] at hq
+    obtain ⟨hqS, h2, h5⟩ := hq
+    have hp := hS q hqS
+    rw [show (10 : ℕ) = 2 * 5 by norm_num, Nat.coprime_mul_iff_right]
+    exact ⟨(Nat.coprime_primes hp Nat.prime_two).mpr h2,
+      (Nat.coprime_primes hp (by norm_num)).mpr h5⟩
+  have hmcop : Nat.Coprime m 10 := Nat.coprime_mul_iff_left.mpr ⟨by norm_num, hTcop⟩
+  have hprod_pos : 0 < ∏ q ∈ T, q := by
+    apply Finset.prod_pos
+    intro q hq
+    exact (hS q (Finset.mem_filter.mp hq).1).pos
+  have hm3 : 3 ≤ m := by rw [hm]; omega
+  obtain ⟨x₀, hx⟩ := h m (by omega) hmcop
+  set L := Nat.totient m with hL
+  have hLpos : 0 < L := Nat.totient_pos.mpr (by omega)
+  have hpow : 10 ^ L ≡ 1 [MOD m] := Nat.ModEq.pow_totient hmcop.symm
+  set K := x₀ + Nat.nth Nat.Prime (max N 3) + 1 with hK
+  set e := L * (K + 1) - 1 with he
+  have hd : e + 1 = L * (K + 1) := by
+    have : 1 ≤ L * (K + 1) := Nat.one_le_iff_ne_zero.mpr (by positivity)
+    omega
+  have hKe : K ≤ e := by
+    have : K + 1 ≤ L * (K + 1) := Nat.le_mul_of_pos_left _ hLpos
+    omega
+  have hKlt : K < 10 ^ e :=
+    lt_of_lt_of_le (Nat.lt_pow_self (by norm_num)) (Nat.pow_le_pow_right (by norm_num) hKe)
+  have h10d : 10 ^ (e + 1) ≡ 1 [MOD m] := by
+    rw [hd, pow_mul]
+    simpa using hpow.pow (K + 1)
+  obtain ⟨n, hn⟩ := hx (10 ^ e) (by omega)
+  have hrun : ∀ i, i < m →
+      digitsLen (Nat.nth Nat.Prime (n + i)) = e + 1 ∧ Nat.nth Nat.Prime (n + i) ≡ 1 [MOD m] := by
+    intro i hi
+    obtain ⟨h1, h2, h3⟩ := hn i hi
+    refine ⟨digitsLen_eq h1 ?_, h3⟩
+    have : 0 < 10 ^ e := by positivity
+    rw [pow_succ]; omega
+  have hnlt : max N 3 < n := by
+    obtain ⟨h1, -, -⟩ := hn 0 (by omega)
+    exact lt_of_nth_prime_lt (by simp only [add_zero] at h1; omega)
+  obtain ⟨j, hjm, hj⟩ := exists_add_mod_eq_one (W n) (by omega : 2 ≤ m)
+  have hW : W (n + j) % m = 1 := by
+    have := W_add_modEq_of_run (k := j) h10d (fun i hi => hrun i (by omega))
+    rw [Nat.ModEq] at this
+    rw [this, hj]
+  refine ⟨n + j, by omega, ?_⟩
+  intro q hqS
+  have hq := hS q hqS
+  by_cases h25 : q = 2 ∨ q = 5
+  · exact not_dvd_W_of_two_or_five h25 (by omega)
+  · have hqT : q ∈ T := by
+      rw [hT, Finset.mem_filter]
+      exact ⟨hqS, by tauto, by tauto⟩
+    have hqm : q ∣ m := Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ hqT) 3
+    exact not_dvd_of_mod_eq_one hq hqm hW
+
 end SW
