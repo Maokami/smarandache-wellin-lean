@@ -20,6 +20,7 @@ permissions: {}
 
 jobs:
   triage:
+    if: github.ref == 'refs/heads/main'
     # 재사용 워크플로의 job 권한 합집합. 각 job 은 그 안에서 더 좁힌다 (summarize 는 contents 읽기만).
     permissions:
       contents: read
