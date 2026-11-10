@@ -577,6 +577,94 @@
   Lean 에서는 IT-all 을 명시적 가정으로 받는다.
 \end{proof}
 
+\section{류 1 의 구간 소수 런과 일반 유한 집합}
+
+이 절의 가정은 Maynard 의 같은 류 소수 런에서 얻는 것으로 보는 외부 가정이다 (대조 기록
+\texttt{docs/literature/2026-11-11-maynard-general-q1.md}). 정의의 \texttt{\textbackslash leanok} 은
+명제의 정의가 형식화됐다는 뜻일 뿐, 가정이 참이라거나 Maynard 의 논증이 Lean 으로 증명됐다는 뜻이 아니다.
+
+\begin{definition}[가정 IOR(\(m\))]
+  \label{def:interval-one-runs}
+  \lean{SW.IntervalOneRuns}
+  \leanok
+  \uses{def:W}
+  어떤 \(x_0\) 가 있어 \(x \ge x_0\) 인 모든 \(x\) 에 대해, 어떤 \(n\) 이 있어 모든 \(j < m\) 에 대해
+  \(x \le p_{n+j+1} \le 3x\) 이고 \(p_{n+j+1} \equiv 1 \pmod m\) 이다.
+  곧 \([x, 3x]\) 안에 연속 소수 \(p_{n+1}, \dots, p_{n+m}\) 이 모두 류 \(1 \bmod m\) 에 놓인다.
+  \(m\) 은 소수일 필요가 없고 \(x_0\) 는 \(m\) 에 의존해도 된다. 증명하지 않은 가정이다.
+\end{definition}
+
+\begin{definition}[가정 IOR-all]
+  \label{def:interval-one-runs-all}
+  \lean{SW.IntervalOneRunsAll}
+  \leanok
+  \uses{def:interval-one-runs}
+  \(m \ge 2\) 이고 \(\gcd(m, 10) = 1\) 인 모든 \(m\) 에 대해 IOR(\(m\)) 가 성립한다. 증명하지 않은 가정이다.
+\end{definition}
+
+\begin{lemma}[런 위의 합동 전이]
+  \label{lem:W-add-modEq-run}
+  \lean{SW.W_add_modEq_of_run}
+  \leanok
+  \uses{def:W, def:digitsLen}
+  \(10^d \equiv 1 \pmod m\) 이고 모든 \(i < k\) 에 대해 \(\dig(p_{n+i+1}) = d\), \(p_{n+i+1} \equiv 1 \pmod m\) 이면
+  \(W_{n+k} \equiv W_n + k \pmod m\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:W-rec}
+  \(k\) 에 대한 귀납법. \(W_{n+i+1} = 10^d W_{n+i} + p_{n+i+1} \equiv W_{n+i} + 1 \pmod m\).
+\end{proof}
+
+\begin{lemma}[나머지 맞추기]
+  \label{lem:add-mod-eq-one}
+  \lean{SW.exists_add_mod_eq_one, SW.not_dvd_of_mod_eq_one}
+  \leanok
+  \(m \ge 2\) 이면 임의의 \(a\) 에 대해 \((a + j) \bmod m = 1\) 인 \(j < m\) 이 있다.
+  또 소수 \(q\) 가 \(m\) 을 나누고 \(a \bmod m = 1\) 이면 \(q \nmid a\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \(a \bmod m \le 1\) 이면 \(j = 1 - a \bmod m\), 아니면 \(j = m + 1 - a \bmod m\).
+  둘째는 \(q \mid a\) 이면 \(q \mid a \bmod m = 1\) 이라 모순.
+\end{proof}
+
+\begin{lemma}[\(2, 5\) 의 배제]
+  \label{lem:not-dvd-two-five}
+  \lean{SW.not_dvd_W_of_two_or_five}
+  \leanok
+  \uses{def:W}
+  \(q = 2\) 또는 \(q = 5\) 이고 \(n \ge 4\) 이면 \(q \nmid W_n\).
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:coprime-ten}
+  \(\gcd(W_n, 10) = 1\) (보조정리~\ref{lem:coprime-ten}) 이고 \(q \mid 10\).
+\end{proof}
+
+\begin{theorem}[IOR-all 에서 Q1, 일반 유한 집합]
+  \label{thm:finite-avoid-one-runs}
+  \lean{SW.avoid_finset_of_intervalOneRunsAll}
+  \leanok
+  \uses{def:interval-one-runs-all, def:W}
+  IOR-all (정의~\ref{def:interval-one-runs-all}) 이 성립하면, 원소가 모두 소수인 임의의 유한 집합 \(S\) 와
+  임의의 \(N\) 에 대해 \(N < n\) 이고 모든 \(q \in S\) 에 대해 \(q \nmid W_n\) 인 \(n\) 이 있다.
+  \(S = \emptyset\), \(S \subseteq \{2, 5\}\), \(3 \in S\) 인 경우도 포함한다. Lean 에서는 IOR-all 을 명시적 가정으로 받는다.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{lem:W-add-modEq-run, lem:add-mod-eq-one, lem:not-dvd-two-five, lem:digitsLen-eq, lem:lt-nth-prime}
+  \(T = S \setminus \{2, 5\}\), \(m = 3 \prod_{q \in T} q\) 로 둔다. \(m \ge 3\) 이고 \(\gcd(m, 10) = 1\) 이며
+  \(T\) 의 모든 원소가 \(m\) 을 나눈다. Euler 정리로 \(L = \varphi(m) > 0\), \(10^L \equiv 1 \pmod m\).
+  \(K = x_0 + p_{\max(N,3)+1} + 1\), \(e = L(K+1) - 1\) 로 두면 \(10^e > K\) 이고 \(10^{e+1} \equiv 1 \pmod m\).
+  IOR(\(m\)) 를 \(x = 10^e\) 에 적용해 \(n\) 을 얻으면, 런의 소수는 \([10^e, 3 \cdot 10^e]\) 안에 있어 모두 \(e+1\) 자리이고
+  (보조정리~\ref{lem:digitsLen-eq}), \(p_{n+1} \ge 10^e > p_{\max(N,3)+1}\) 이므로 \(n > \max(N, 3)\).
+  보조정리~\ref{lem:W-add-modEq-run} 로 \(j \le m\) 에서 \(W_{n+j} \equiv W_n + j \pmod m\) 이고,
+  보조정리~\ref{lem:add-mod-eq-one} 로 \(W_{n+j} \bmod m = 1\) 인 \(j < m\) 을 고른다.
+  \(T\) 의 소수는 \(m\) 을 나누므로 \(W_{n+j}\) 를 나누지 못하고, \(2, 5\) 는 \(n + j \ge 4\) 에서
+  보조정리~\ref{lem:not-dvd-two-five} 로 배제된다.
+\end{proof}
+
 \section{열린 문제}
 
 \begin{proposition}[Q1, \(|S| \ge 3\)]
