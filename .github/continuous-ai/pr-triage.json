@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "label_namespace": "pr-triage/",
+  "report_title": "PR 현황 보고서 (자동)",
+  "required_checks": ["Lean build and audits"],
+  "marker_id": "pr-triage"
+}
