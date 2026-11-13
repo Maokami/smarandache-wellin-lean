@@ -108,9 +108,9 @@ class Attempts(unittest.TestCase):
         self.assertEqual(r["issue"], 1)
         self.assertTrue(any("명시적 수동 실행" in x for x in r["reasons"]))
 
-    def test_new_base_or_edited_body_allows_retry(self):
-        self.assertEqual(H.select([issue(1, body="과제", comments=[bot_attempt("과제", base=OTHER_BASE)])],
-                                  [], OWNER, BASE)["issue"], 1)
+    def test_new_base_alone_does_not_retry_but_owner_strategy_edit_does(self):
+        self.assertIsNone(H.select([issue(1, body="과제", comments=[bot_attempt("과제", base=OTHER_BASE)])],
+                                   [], OWNER, BASE)["issue"])
         self.assertEqual(H.select([issue(1, body="고친 과제", comments=[bot_attempt("과제")])],
                                   [], OWNER, BASE)["issue"], 1)
 

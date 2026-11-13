@@ -5,7 +5,7 @@
   1. 열린 연구 PR (head 가 claude/hunt-*, Draft·Ready 모두) 이 2 개 이상이면 새 작업을 시작하지 않는다.
   2. 후보는 열린 lemma-hunt 이슈 가운데 소유자가 쓰고, 본문을 소유자 말고는 고친 적 없는 것.
   3. 열린 또는 병합된 연구 PR 이 본문에서 그 이슈를 가리키면 (Refs/Closes/Fixes/Resolves #N) 고르지 않는다.
-  4. 같은 본문 (task 해시) 과 같은 실행 기준 SHA (예약 실행은 main) 로 시작한 기록이 있으면 고르지 않는다 (결과와 무관).
+  4. 같은 본문 (task 해시) 으로 시작한 기록이 있으면 기준 SHA나 결과와 무관하게 고르지 않는다.
      기록은 작업 선택 직후, 비싼 Lean 준비와 AI 실행 전에 github-actions 봇이 남기는 댓글의 고정 표식이다
      (outcome=started). 그래서 시간 초과나 취소로 끝나도 기록이 남는다. AI 가 쓴 문장은 보지 않는다.
   5. 남은 것 가운데 번호가 가장 작은 이슈 하나.
@@ -131,12 +131,12 @@ def select(issues: List[dict], prs: List[dict], owner: str, base: str,
             reasons.append(f"#{n} 건너뜀: 연결된 연구 PR {desc}")
             continue
         h = task_hash(issue.get("body"))
-        same = [a for a in attempts(issue) if a["task"] == h and a["base"] == base]
+        same = [a for a in attempts(issue) if a["task"] == h]
         if same and explicit is None:
-            reasons.append(f"#{n} 건너뜀: 같은 본문·실행 기준 SHA 로 이미 시작함 (run {same[-1]['run']}, {same[-1]['outcome']})")
+            reasons.append(f"#{n} 건너뜀: 같은 본문으로 이미 시작함 (run {same[-1]['run']}, {same[-1]['outcome']})")
             continue
         if same:
-            reasons.append(f"#{n}: 같은 조건의 이전 시도가 있지만 명시적 수동 실행이라 다시 시도")
+            reasons.append(f"#{n}: 같은 본문의 이전 시도가 있지만 명시적 수동 실행이라 다시 시도")
         reasons.append(f"#{n} 선택")
         return {"issue": n, "task_hash": h, "body": issue.get("body") or "", "reasons": reasons}
     reasons.append("고를 작업 없음")
@@ -208,8 +208,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.cmd == "record-body":
         marker = attempt_marker(args.task, args.base, args.outcome, args.run)
         print(f"자동 사냥 시작 기록 ({args.outcome}): 실행 기준 SHA {args.base[:7]}, [실행]({args.run_url}).\n"
-              f"결과는 같은 실행의 PR 이나 실패 보고로 확인한다. 같은 본문·같은 기준으로는 예약 실행이 다시 고르지 않는다\n"
-              f"(이슈 본문을 고치거나 main 이 바뀌면 다시 고를 수 있고, 수동 실행은 언제든 가능하다).\n\n{marker}")
+              f"결과는 같은 실행의 PR 이나 실패 보고로 확인한다. 같은 본문은 main 변경과 무관하게 예약 실행이 다시 고르지 않는다.\n"
+              f"새 전략·관련 의존성 변경을 소유자가 이슈 본문에 기록하거나, 수동 재시도를 지정해야 한다.\n\n{marker}")
         return 0
 
     explicit: Optional[int] = None

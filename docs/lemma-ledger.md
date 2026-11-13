@@ -30,6 +30,16 @@
 
 ## 미해결
 
+일반 Q1의 무조건적인 명제와 아래의 조건부 검증 결과를 구분한다. PR #16의 정확한 head
+`cb82e0677b9ad532d2b06288c8fc0226e7d90861` 및 병합 main `30482b5`의 CI·Blueprint가 통과했다.
+
+| ID | 명제 | 상태 | 가정 | 역할 | 비고 | 근거 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Q1-fin | 임의의 유한 소수 집합 S와 N에 대해 N < n이고 모든 q ∈ S가 Wₙ을 나누지 않는 n이 있다 | Lean 검증 (조건부) | `IntervalOneRunsAll` (IOR-all) | 일반 유한 집합 회피를 한 선언으로 연결 | 빈 집합, S ⊆ {2,5}, 3 ∈ S도 포함. 소수 런 존재와 최종 소수 무한성은 증명하지 않음 | `avoid_finset_of_intervalOneRunsAll`, blueprint `thm:finite-avoid-one-runs`, PR #16 |
+| IOR-all | 10과 서로소인 모든 m ≥ 2에 대해, 충분히 큰 모든 x의 [x,3x]에 m개의 연속 소수가 모두 1 mod m로 존재 | 자연어 증명 (문헌의 귀결, Lean 밖) | 없음 | Q1-fin의 명시적 외부 가정 | 정의가 Lean에 등록됐다는 것과 그 진실성의 형식화를 구별. Maynard 체의 대규모 포팅은 현재 과제가 아님 | `IntervalOneRuns`, `IntervalOneRunsAll`, `docs/literature/2026-11-11-maynard-general-q1.md` |
+
+아래 표의 Q1은 가정 없는 명제이며, 그 상태를 올리지 않는다.
+
 | ID | 명제 | 상태 | 가정 | 역할 | 실패 이유·장애물 | 근거 |
 | --- | --- | --- | --- | --- | --- | --- |
 | H3 | pₘ₊₁ ≡ pₘ₊₂ ≡ pₘ₊₃ (mod 3) 인 m 이 무한히 많다 (`SameClassTriples3`) | 자연어 증명 (문헌) | 없음 | C7 의 가정. 성립하면 3 이 든 모든 쌍에서 Q1 | W 와 무관한 소수만의 명제. **Banks–Freiberg–Turnage-Butterbaugh (2015) Corollary 3** (D = 3, m = 3) 이 "무한히 많은 r" 형태로 그대로 준다. Shiu (2000) 의 임의 길이 문자열, Maynard (2016) Thm 3.3 (양의 비율) 에서도 따른다. Lean 밖의 가정으로 둔다 (Maynard 체의 형식화는 범위 밖). n < 2·10⁶ 에서 비율 0.18 (독립 0.25; 연속 소수가 같은 류를 피하는 편향). **Mathlib 에 없음** | `docs/experiments/2026-11-05-triples-2M.txt` |
@@ -45,4 +55,6 @@
 
 ## 반례·폐기
 
-(아직 없음)
+| 대상 | 판정 | 근거 |
+| --- | --- | --- |
+| WB3(q,r,s), 매개변수 중 하나가 3 | 성립하지 않음 (Lean 검증) | `not_windowBlocks3_of_three`, PR #11. 이 창 조건을 새 가정으로 채택하는 전략은 다시 제안하지 않는다 |

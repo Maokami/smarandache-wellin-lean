@@ -60,6 +60,11 @@ n = 1, 2, 4, 128, 174, 342, 435, 1429
 | IT(q) (큰 x 마다 [x, 3x] 에 같은 류의 연속 소수 세 개) ⇒ Hd(q), IT(3) ⇒ H3 | `digitTriples_of_intervalTriples`, `sameClassTriples3_of_intervalTriples` | `Interval.lean` |
 | IT(q) ⇒ Q1({q, r}) | `avoid_two_of_interval_triples`, `avoid_three_of_interval_triples` | `Interval.lean` |
 | IT-all (모든 소수 q ≥ 3 의 IT(q)) ⇒ 임의의 소수 q, r 를 동시에 피하는 n 무한 | `IntervalTriplesAll`, `avoid_two_of_intervalTriplesAll` | `Interval.lean` |
+| IOR-all ⇒ 임의의 유한 소수 집합 S를 동시에 피하는 n 무한 (조건부, PR #16) | `IntervalOneRunsAll`, `avoid_finset_of_intervalOneRunsAll` | `Interval.lean` |
+
+IOR-all은 `10`과 서로소인 모든 `m ≥ 2`에 대한 구간별 류 1 소수 런 가정이다. 그 존재는 Lean 밖에 둔다.
+일반 Q1의 조건부 검증은 최종 `SWInfinitude`의 증명이 아니다. 현재 연구 큐와 운영은
+[`docs/tooling/2026-11-13-research-planner.md`](docs/tooling/2026-11-13-research-planner.md)에 설명한다.
 
 미해결 보조명제와 그 상태는 `docs/lemma-ledger.md` 에 기록한다.
 
@@ -118,9 +123,11 @@ AI 는 쓰거나 의견을 다는 역할만 한다. 에이전트 규칙은 `AGEN
 | `claude-ask.yml` | 2 | Claude (구독) | 소유자 댓글의 `@claude` | 댓글. 파일 수정 금지 |
 | `claude-lit-watch.yml` | 2 | Claude (구독) | 매주 월요일, 수동 | `lit-watch` 이슈 하나 |
 | `claude-pr-triage.yml` | 2 | Claude (변화가 있을 때만) | 2 시간마다, 수동 | 보고서 이슈 하나와 관리 라벨. PR 병합·종료는 하지 않는다 |
+| `claude-research-planner.yml` | 2 | Claude (연구 입력이 바뀌었을 때만) | 매일 09:07 KST, 수동 | 연구 검토와 후보 최대 3개를 보고서 하나에 게시. 실행 큐 승격은 소유자가 검토한다 |
 | `claude-lemma-hunter.yml` | 3 | Claude (구독) | 매일 09:37 KST, 수동 | `claude/hunt-*` 브랜치와 draft PR. 소유자 과제만 선택하고 중복·검토 대기·같은 조건 재시도를 제한한다 |
 
-AI 워크플로는 `anthropics/claude-code-action@v1` 과 Claude 구독 토큰을 쓴다. 쓰려면 저장소 소유자가 한 번 설정한다.
+AI 워크플로는 `anthropics/claude-code-action`과 Claude 구독 토큰을 쓴다. 새 제안자와 PR 정리 패키지는 검토한 Action SHA로 고정한다.
+쓰려면 저장소 소유자가 한 번 설정한다.
 
 ```bash
 # 1) Claude GitHub App 설치: https://github.com/apps/claude  (이 저장소만 선택)
