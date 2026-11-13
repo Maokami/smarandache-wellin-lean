@@ -5,7 +5,7 @@
 set -uo pipefail
 R="${1:-Maokami/smarandache-wellin-lean}"
 cd "$(dirname "$0")/.." || exit 1
-WFS="claude-ask.yml claude-review.yml claude-lit-watch.yml claude-lemma-hunter.yml"
+WFS="claude-ask.yml claude-review.yml claude-lit-watch.yml claude-lemma-hunter.yml claude-pr-triage.yml claude-research-planner.yml"
 
 echo "## 1. 설정 파일"
 for w in $WFS; do
@@ -47,6 +47,9 @@ gh api "repos/$R/pulls/comments?sort=created&direction=desc&per_page=100" \
 gh issue list --repo "$R" --label lit-watch --state all --limit 20 --json number,title,url \
   --jq '"  lit-watch 이슈 (문헌 감시 완료 결과): \(length)" + (if length > 0 then ", 최신 #\(.[0].number) \(.[0].url)" else "" end)' \
   || echo "  lit-watch 이슈: 조회 실패 (미확인)"
+gh issue list --repo "$R" --label research-plan/report --state open --limit 20 --json number,url \
+  --jq '"  연구 제안 보고서 (검토 전 후보): \(length)" + (if length > 0 then ", 최신 #\(.[0].number) \(.[0].url)" else "" end)' \
+  || echo "  연구 제안 보고서: 조회 실패 (미확인)"
 # shellcheck disable=SC2016  # $all, $done 는 셸 변수가 아니라 jq 변수다
 gh pr list --repo "$R" --state all --limit 50 --json number,headRefName,isDraft,state,body,url \
   --jq '[.[] | select(.headRefName | startswith("claude/"))] as $all

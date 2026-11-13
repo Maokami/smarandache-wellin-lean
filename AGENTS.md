@@ -41,7 +41,8 @@ python3 -I scripts/check_blueprint.py --write-decls /tmp/decls && lake exe check
 ## 수학적 맥락
 
 - 목표 추측 (미해결): Wₙ 이 소수인 n 이 무한히 많다. 현재 연구 단위는 Q1 (유한 소수 집합이 모든 큰 항을 나눌 수
-  없다) 이다. |S| = 1 은 무조건, |S| = 2 는 문헌 가정 (H3, IT(q)) 아래 Lean 으로 증명되어 있다.
+  없다) 이다. |S| = 1 은 무조건, 일반 유한 S는 `IntervalOneRunsAll` 아래 Lean으로 증명되어 있다 (PR #16).
+  이 소수 런 가정의 문헌 연결은 Lean 밖이며, 작은 소인수 회피와 최종 소수성 사이의 간극도 남아 있다.
 - 의존 구조는 `blueprint/src/content.tex`, 상태의 세부와 실패 이유는 `docs/lemma-ledger.md`, 계획은
   `docs/research-plan.md` 에 있다. 문헌 근거는 `docs/references.md` 와 `docs/literature/`.
 - 계산 실험 (`scripts/sw_*.py`) 은 증명이 아니다. 결과를 근거로 상태를 올리지 않는다.
