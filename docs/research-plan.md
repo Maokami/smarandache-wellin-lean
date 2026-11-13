@@ -126,6 +126,7 @@ Q1 (유한 소수 집합 회피) 을 밀어 본 결과:
 
 - PR #16에서 `IntervalOneRunsAll` 아래 일반 유한 소수 집합의 회피를 형식화했다
   (`SW.avoid_finset_of_intervalOneRunsAll`, 기준 main `30482b5`). CI·공리 감사·Blueprint·독립 검토가 통과했다.
+  근거는 [PR #16의 검증 기록](https://github.com/Maokami/smarandache-wellin-lean/pull/16#issuecomment-6773929691)이다.
 - 소수 런 가정의 문헌 연결은 `docs/literature/2026-11-11-maynard-general-q1.md`의 자연어 대조다.
   `IntervalOneRunsAll`의 진실성을 Lean으로 증명한 것은 아니다.
 - 작은 소인수를 피하는 항이 무한히 많다는 결론에서 소수 항의 무한성으로 가는 연결은 여전히 미해결이다.

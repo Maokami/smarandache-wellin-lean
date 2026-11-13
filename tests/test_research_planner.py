@@ -140,6 +140,23 @@ class Validation(unittest.TestCase):
 
 
 class Publishing(unittest.TestCase):
+    def test_combined_and_escaped_body_limit_is_checked_before_any_write(self):
+        gh = FixtureGH()
+        snapshot = P.collect(gh, BASE)
+        ai = proposal()
+        ai["notes"] = "가" * 6000
+        ai["sources"] = [{"url": f"https://arxiv.org/abs/{n}", "checked": "가" * 1200} for n in range(8)]
+        ai["candidates"] = []
+        for n in range(3):
+            candidate = proposal()["candidates"][0]
+            candidate["title"] = f"새 과제 {n}"
+            candidate["statement"] = "가" * 3000
+            ai["candidates"].append(candidate)
+        P.validate(ai, snapshot)  # 필드별 상한은 만족해도 전체 게시 본문은 넘을 수 있다.
+        with self.assertRaises(P.PlannerError):
+            P.publish(gh, snapshot, ai, "https://github.com/run", "오늘")
+        self.assertEqual(gh.writes, [])
+
     def test_changes_after_ai_and_target_race_are_stale_without_writes(self):
         for change in ("main", "issue", "report"):
             gh = FixtureGH()

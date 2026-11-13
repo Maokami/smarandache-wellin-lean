@@ -195,7 +195,10 @@ def render(snapshot, ai, run_url, now):
             value = candidate[name]
             value = "; ".join(value) if isinstance(value, list) else value
             lines += [f"**{label}:** {safe(value or '없음')}", ""]
-    return "\n".join(lines)
+    body = "\n".join(lines)
+    if len(body.encode("utf-8")) > 60000:
+        raise PlannerError("이스케이프한 보고서가 60 KB를 넘어 게시하지 않는다")
+    return body
 
 
 def publish(gh, snapshot, ai, run_url, now):
