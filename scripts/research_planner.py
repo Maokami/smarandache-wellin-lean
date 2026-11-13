@@ -111,22 +111,26 @@ def collect(gh, base):
         comments = gh.comments(issue["number"])
         if len(comments) >= COMMENT_LIMIT:
             raise PlannerError(f"#{issue['number']} 댓글 목록이 잘렸을 수 있다")
-        research.append({"number": issue["number"], "title": issue["title"], "body": issue["body"],
+        research.append({"number": issue["number"], "title": issue["title"],
+                         "body_lines": (issue["body"] or "").splitlines(),
                          "state": issue["state"], "labels": labels, "author": issue["author"]["login"],
-                         "comments": [{"author": c["user"]["login"], "body": c["body"]} for c in comments]})
+                         "comments": [{"author": c["user"]["login"],
+                                       "body_lines": (c["body"] or "").splitlines()} for c in comments]})
     if len(reports) > 1:
         raise PlannerError("봇 소유 연구 보고서가 여러 개다")
     report = reports[0] if reports else None
     research_prs = sorted((p for p in prs if p["headRefName"].startswith("claude/hunt-")),
                           key=lambda item: item["number"])
+    for pr in research_prs:
+        pr["body_lines"] = (pr.pop("body", "") or "").splitlines()
     facts = {"version": 1, "repo": gh.repo, "base_sha": base, "issues": research, "prs": research_prs}
-    if len(json.dumps(facts, ensure_ascii=False).encode("utf-8")) > 120000:
-        raise PlannerError("연구 입력이 120 KB를 넘는다. 기록을 정리해야 한다")
     previous = DIGEST.search(report["body"]) if report else None
     snapshot = dict(facts, digest=digest(facts), report_number=report["number"] if report else None,
                     previous_digest=previous.group(1) if previous else None)
     backlog = sum(p["state"].upper() == "OPEN" for p in research_prs)
     snapshot["should_plan"] = backlog < 2 and snapshot["digest"] != snapshot["previous_digest"]
+    if len(json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")) > 120000:
+        raise PlannerError("연구 입력이 120 KB를 넘는다. 기록을 정리해야 한다")
     return snapshot
 
 
@@ -228,7 +232,7 @@ def main():
         gh = GH(args.repo, args.dry_run)
         if args.command == "collect":
             snapshot = collect(gh, args.base or "")
-            Path(args.snapshot).write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
+            Path(args.snapshot).write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
             if args.github_output:
                 with open(args.github_output, "a", encoding="utf-8") as out:
                     out.write(f"should_plan={str(snapshot['should_plan']).lower()}\n")

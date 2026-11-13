@@ -53,6 +53,17 @@ class FixtureGH:
 
 
 class Collection(unittest.TestCase):
+    def test_multiline_contracts_and_failures_remain_readable_to_the_model(self):
+        gh = FixtureGH()
+        body = "목표\n```lean\n정확한 계약\n```\n가정과 범위"
+        gh.records[0]["body"] = body
+        gh.notes = [{"user": {"login": "claude[bot]"}, "body": "실패 원인\n다음 전략"}]
+        gh.pulls = [{"number": 4, "headRefName": "claude/hunt-x", "state": "CLOSED", "body": body}]
+        snapshot = P.collect(gh, BASE)
+        self.assertEqual(snapshot["issues"][0]["body_lines"], body.splitlines())
+        self.assertEqual(snapshot["issues"][0]["comments"][0]["body_lines"], ["실패 원인", "다음 전략"])
+        self.assertEqual(snapshot["prs"][0]["body_lines"], body.splitlines())
+
     def test_only_research_inputs_and_changes_trigger_ai(self):
         gh = FixtureGH()
         first = P.collect(gh, BASE)
@@ -64,6 +75,12 @@ class Collection(unittest.TestCase):
         self.assertFalse(second["should_plan"])
         gh.notes.append({"user": {"login": "claude[bot]"}, "body": "시도 실패 [sw-done:1.1]"})
         self.assertTrue(P.collect(gh, BASE)["should_plan"])
+
+    def test_context_cap_counts_the_readable_serialization(self):
+        gh = FixtureGH()
+        gh.records[0]["body"] = "\n" * 15000
+        with self.assertRaises(P.PlannerError):
+            P.collect(gh, BASE)
 
     def test_untrusted_or_duplicate_report_is_never_overwritten(self):
         for records in ([issue(9, P.LABEL, "outsider", P.MARKER)],
