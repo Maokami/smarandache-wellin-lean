@@ -194,6 +194,7 @@ class WorkflowBoundary(unittest.TestCase):
         self.assertIn("issues: write", publish)
         self.assertNotIn("claude-code-action", publish)
         self.assertNotIn("CLAUDE_CODE_OAUTH_TOKEN", publish)
+        self.assertIn("additional_permissions: |\n            contents: read\n            pull_requests: read\n            issues: read", propose)
         self.assertIn("--disallowedTools \"Bash,Edit,MultiEdit,Write", propose)
         self.assertIn("steps.collect.outputs.should_plan == 'true'", propose)
         self.assertIn("--max-turns 15", propose)

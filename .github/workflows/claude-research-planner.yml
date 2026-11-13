@@ -73,6 +73,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: |
             contents: read
+            pull_requests: read
+            issues: read
           prompt: |
             연구 과제를 제안한다. 파일/이슈/PR을 바꾸지 않는다. 한국어 JSON만 출력한다.
             먼저 AGENTS.md, docs/research-plan.md, docs/lemma-ledger.md, docs/literature/,
