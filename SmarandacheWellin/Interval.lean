@@ -237,4 +237,17 @@ theorem avoid_finset_of_intervalOneRunsAll
     have hqm : q ∣ m := Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ hqT) 3
     exact not_dvd_of_mod_eq_one hq hqm hW
 
+/-- 고정된 작은 소인수 회피 (외부 가정 조건부): `IntervalOneRunsAll` 이면 임의의 `B`, `N` 에 대해
+`N < n` 이고 `B` 이하의 어느 소수도 `W n` 을 나누지 않는 `n` 이 있다.
+`S = {q ≤ B : q 소수}` 에 `avoid_finset_of_intervalOneRunsAll` 을 적용한다. -/
+theorem avoid_le_of_intervalOneRunsAll
+    (h : IntervalOneRunsAll) (B N : ℕ) :
+    ∃ n : ℕ, N < n ∧ ∀ q : ℕ, q.Prime → q ≤ B → ¬ q ∣ W n := by
+  classical
+  obtain ⟨n, hNn, hn⟩ := avoid_finset_of_intervalOneRunsAll h
+    ((Finset.range (B + 1)).filter Nat.Prime)
+    (fun q hq => (Finset.mem_filter.mp hq).2) N
+  refine ⟨n, hNn, fun q hq hqB => hn q ?_⟩
+  exact Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (Nat.lt_succ_of_le hqB), hq⟩
+
 end SW
