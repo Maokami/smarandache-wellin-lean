@@ -84,3 +84,4 @@ import SmarandacheWellin.Interval
 #print axioms SW.not_dvd_of_mod_eq_one
 #print axioms SW.not_dvd_W_of_two_or_five
 #print axioms SW.avoid_finset_of_intervalOneRunsAll
+#print axioms SW.avoid_le_of_intervalOneRunsAll
