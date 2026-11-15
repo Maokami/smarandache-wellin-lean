@@ -66,6 +66,10 @@ import SmarandacheWellin.Interval
 #print axioms SW.avoid_three_of_windowBlocks3
 #print axioms SW.three_dvd_B_or_B_succ_or_B3
 #print axioms SW.not_windowBlocks3_of_three
+#print axioms SW.primePairProduct
+#print axioms SW.primePairProduct_strictMono
+#print axioms SW.primePairProduct_not_prime
+#print axioms SW.primePairProduct_avoid_finset
 
 -- Interval
 #print axioms SW.digitsLen_eq
