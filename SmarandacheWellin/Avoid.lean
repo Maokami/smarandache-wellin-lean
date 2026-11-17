@@ -421,4 +421,32 @@ theorem not_windowBlocks3_of_three {q r s : ℕ}
   · exact b h'
   · exact c h'
 
+/-! ### 연속 소수 두 개의 곱: 회피와 소수성 사이의 간극
+
+`p_{n+1} p_{n+2}` 는 모든 항이 합성수이지만 모든 유한 소수 집합을 결국 피한다. 이것은 SW 수열의 반례가
+아니라, 일반 수열에서 "유한 소수 집합 회피" 만으로는 소수성을 결론 낼 수 없다는 예다. -/
+
+/-- 연속 소수 두 개의 곱 `p_{n+1} · p_{n+2}`. -/
+noncomputable def primePairProduct (n : ℕ) : ℕ :=
+  Nat.nth Nat.Prime n * Nat.nth Nat.Prime (n + 1)
+
+theorem primePairProduct_strictMono : StrictMono primePairProduct := by
+  refine strictMono_nat_of_lt_succ fun n => ?_
+  have hm := Nat.nth_strictMono Nat.infinite_setOfPred_prime
+  have h1 : Nat.nth Nat.Prime n < Nat.nth Nat.Prime (n + 1) := hm (Nat.lt_succ_self n)
+  have h2 : Nat.nth Nat.Prime (n + 1) < Nat.nth Nat.Prime (n + 1 + 1) := hm (Nat.lt_succ_self _)
+  exact Nat.mul_lt_mul'' h1 h2
+
+theorem primePairProduct_not_prime (n : ℕ) : ¬ (primePairProduct n).Prime :=
+  Nat.not_prime_mul (nth_prime_prime n).ne_one (nth_prime_prime (n + 1)).ne_one
+
+theorem primePairProduct_avoid_finset
+    (S : Finset ℕ) (hS : ∀ q ∈ S, q.Prime) (N : ℕ) :
+    ∃ n : ℕ, N < n ∧ ∀ q ∈ S, ¬ q ∣ primePairProduct n := by
+  refine ⟨N + 1 + S.sup id, by omega, fun q hq hdvd => ?_⟩
+  have hle : q ≤ S.sup id := Finset.le_sup (f := id) hq
+  rcases (Nat.Prime.dvd_mul (hS q hq)).mp hdvd with h | h
+  · exact not_dvd_nth_prime_of_le (hS q hq) (by omega) h
+  · exact not_dvd_nth_prime_of_le (hS q hq) (by omega) h
+
 end SW

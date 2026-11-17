@@ -522,6 +522,62 @@
   WB3 를 \(M = 3\) 에 적용해 얻은 \(n > 3\) 에서 \(t = 3\) 을 꺼내면 보조정리~\ref{lem:WB3-three} 와 모순이다.
 \end{proof}
 
+\section{회피와 소수성 사이의 간극: 연속 소수 두 개의 곱}
+
+이 절의 수열은 SW 수열의 반례가 \emph{아니다}. 모든 항이 합성수이면서도 모든 유한 소수 집합을 결국 피하는
+(증가) 수열이 있으므로, 일반 수열에 대해서는 Q1 형의 회피 성질만으로 소수인 항이 무한히 많다고 결론 낼 수 없다는
+예다. 이 예는 SW 수열 자체에서 Q1과 최종 소수성 (정리~\ref{thm:main}) 사이의 함의를 판정하지 않는다.
+SW 추측을 회피 성질만으로 도출하는 일반 논법에는 간극이 있으며, 이를 메우려면
+\(W_n\) 에 고유한 추가 정보를 검토해야 한다. 아래의 네 진술은 모두 무조건적이다.
+
+\begin{definition}[연속 소수 두 개의 곱]
+  \label{def:prime-pair-product}
+  \lean{SW.primePairProduct}
+  \leanok
+  \(P_n = p_{n+1} \cdot p_{n+2}\) (\(n \ge 0\), \(p_1 = 2\)). 즉 Lean 의
+  \(\mathtt{Nat.nth\ Nat.Prime}\ n \cdot \mathtt{Nat.nth\ Nat.Prime}\ (n+1)\).
+\end{definition}
+
+\begin{lemma}[\(P\) 는 순증가]
+  \label{lem:prime-pair-product-mono}
+  \lean{SW.primePairProduct_strictMono}
+  \leanok
+  \uses{def:prime-pair-product}
+  \(n \mapsto P_n\) 은 순증가한다.
+\end{lemma}
+\begin{proof}
+  \leanok
+  \(p_{n+1} < p_{n+2}\), \(p_{n+2} < p_{n+3}\) 이므로 \(P_n < P_{n+1}\).
+\end{proof}
+
+\begin{lemma}[\(P_n\) 은 합성수]
+  \label{lem:prime-pair-product-composite}
+  \lean{SW.primePairProduct_not_prime}
+  \leanok
+  \uses{def:prime-pair-product, lem:basic-primes}
+  모든 \(n\) 에 대해 \(P_n\) 은 소수가 아니다.
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{lem:basic-primes}
+  두 인수 \(p_{n+1}, p_{n+2}\) 가 모두 \(1\) 이 아니다.
+\end{proof}
+
+\begin{theorem}[\(P\) 는 모든 유한 소수 집합을 피한다]
+  \label{thm:composite-finite-avoid}
+  \lean{SW.primePairProduct_avoid_finset}
+  \leanok
+  \uses{def:prime-pair-product}
+  원소가 모두 소수인 임의의 유한 집합 \(S\) (\(S = \emptyset\) 포함) 와 임의의 \(N\) 에 대해
+  \(N < n\) 이고 모든 \(q \in S\) 에 대해 \(q \nmid P_n\) 인 \(n\) 이 있다.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{lem:lt-nth-prime}
+  \(n = N + 1 + \max(S \cup \{0\})\) 로 둔다. \(q \in S\) 가 \(P_n\) 을 나누면 \(q\) 는 \(p_{n+1}\) 또는
+  \(p_{n+2}\) 를 나누는데, \(q \le n \le n + 1\) 이므로 보조정리~\ref{lem:lt-nth-prime} 와 모순이다.
+\end{proof}
+
 \section{문헌의 정리 (Lean 밖)}
 
 다음 두 정리는 Maynard 체에 기반한 깊은 결과이며 Mathlib 에 없다. 이 프로젝트는 이들을 형식화하지 않고,
