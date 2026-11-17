@@ -38,6 +38,10 @@ class FixtureGH:
     def main_sha(self):
         return self.sha
 
+    def source_context(self, base):
+        return {"root": "/home/runner/work/smarandache-wellin-lean/smarandache-wellin-lean",
+                "files": ["SmarandacheWellin/Interval.lean", "docs/literature/2026-11-11-maynard-general-q1.md"]}
+
     def issues(self):
         return copy.deepcopy(self.records)
 
@@ -121,6 +125,26 @@ class Collection(unittest.TestCase):
 
 
 class Validation(unittest.TestCase):
+    def test_local_tracked_sources_become_pinned_links_and_are_idempotent(self):
+        ai = proposal()
+        path = "SmarandacheWellin/Interval.lean"
+        ai["sources"][0]["url"] = "file://" + self.snapshot["source_context"]["root"] + "/" + path
+        P.validate(ai, self.snapshot)
+        expected = f"https://github.com/{REPO}/blob/{BASE}/{path}"
+        self.assertEqual(ai["sources"][0]["url"], expected)
+        P.validate(ai, self.snapshot)
+        self.assertEqual(ai["sources"][0]["url"], expected)
+
+    def test_outside_untracked_and_traversal_local_sources_are_rejected(self):
+        root = "file://" + self.snapshot["source_context"]["root"]
+        for url in ("file:///etc/passwd", root + "/.git/config", root + "/untracked.txt",
+                    root + "/../secret", root + "/%2e%2e/secret", root + "/SmarandacheWellin/Interval.lean?x=1",
+                    root + "/SmarandacheWellin/Interval.lean#x", "file://host" + root[7:] + "/README.md"):
+            ai = proposal()
+            ai["sources"][0]["url"] = url
+            with self.subTest(url=url), self.assertRaises(P.PlannerError):
+                P.validate(ai, self.snapshot)
+
     def setUp(self):
         self.snapshot = P.collect(FixtureGH(), BASE)
 

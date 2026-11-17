@@ -13,7 +13,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote, quote
 
 LABEL = "research-plan/report"
 TITLE = "연구 과제 제안 (자동)"
@@ -74,6 +74,12 @@ class GH:
         # 상한과 같아도 다음 페이지가 없다고 단정하지 않는다.
         return self.call(["api", f"repos/{self.repo}/issues/{number}/comments?per_page={COMMENT_LIMIT}"])
 
+    def source_context(self, base):
+        root = Path(__file__).resolve().parent.parent
+        result = subprocess.run(["git", "ls-tree", "-r", "--name-only", "-z", base], cwd=root,
+                                capture_output=True, text=True, check=True)
+        return {"root": str(root), "files": result.stdout.rstrip("\0").split("\0")}
+
     def write_report(self, number, body):
         if self.dry_run:
             return "dry-run"
@@ -123,7 +129,8 @@ def collect(gh, base):
                           key=lambda item: item["number"])
     for pr in research_prs:
         pr["body_lines"] = (pr.pop("body", "") or "").splitlines()
-    facts = {"version": 1, "repo": gh.repo, "base_sha": base, "issues": research, "prs": research_prs}
+    facts = {"version": 1, "repo": gh.repo, "base_sha": base, "issues": research, "prs": research_prs,
+             "source_context": gh.source_context(base)}
     previous = DIGEST.search(report["body"]) if report else None
     snapshot = dict(facts, digest=digest(facts), report_number=report["number"] if report else None,
                     previous_digest=previous.group(1) if previous else None)
@@ -132,6 +139,26 @@ def collect(gh, base):
     if len(json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")) > 120000:
         raise PlannerError("연구 입력이 120 KB를 넘는다. 기록을 정리해야 한다")
     return snapshot
+
+
+def source_url(raw, snapshot):
+    """추적된 checkout 파일의 URI만 현재 커밋의 공개 링크로 변환한다. 파일을 열지 않는다."""
+    parsed = urlparse(raw)
+    if parsed.scheme != "file":
+        return raw
+    context = snapshot.get("source_context", {})
+    root = context.get("root", "").rstrip("/")
+    path = unquote(parsed.path)
+    if (parsed.netloc or parsed.query or parsed.fragment or not root.startswith("/")
+            or not path.startswith(root + "/")):
+        raise PlannerError("현재 checkout 안의 파일 출처가 아니다")
+    relative = path[len(root) + 1:]
+    if (any(p in ("", ".", "..") for p in relative.split("/"))
+            or relative not in context.get("files", [])
+            or not re.fullmatch(r"[0-9a-f]{40}", snapshot.get("base_sha", ""))
+            or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", snapshot.get("repo", ""))):
+        raise PlannerError("검증한 커밋의 추적 파일 출처가 아니다")
+    return f"https://github.com/{snapshot['repo']}/blob/{snapshot['base_sha']}/{quote(relative, safe='/')}"
 
 
 def validate(ai, snapshot):
@@ -143,13 +170,14 @@ def validate(ai, snapshot):
     for source in ai["sources"]:
         if not isinstance(source, dict) or set(source) != {"url", "checked"}:
             raise PlannerError("출처 필드가 url/checked와 다르다")
-        raw_url = text(source["url"], "url", 1000)
+        raw_url = source_url(text(source["url"], "url", 1000), snapshot)
         url = urlparse(raw_url)
         if url.scheme != "https" or url.hostname not in SOURCE_HOSTS or url.username or url.password:
             raise PlannerError("허용된 1차 출처 HTTPS 주소가 아니다")
         if any(c.isspace() for c in raw_url) or re.search(r"[<>`\\]", raw_url):
             raise PlannerError("출처 주소에 공백/제어 표기가 있다")
         text(source["checked"], "checked", 1200)
+        source["url"] = raw_url
     candidates = ai["candidates"]
     if not isinstance(candidates, list) or len(candidates) > 3:
         raise PlannerError("후보는 0~3개여야 한다")
@@ -242,6 +270,7 @@ def main():
             ai = json.loads(Path(args.ai).read_text(encoding="utf-8")) if args.ai else None
             if args.command == "validate":
                 validate(ai, snapshot)
+                Path(args.ai).write_text(json.dumps(ai, ensure_ascii=False, indent=2), encoding="utf-8")
                 print("연구 후보 구조 검사 통과 (수학적 검증 아님)")
             else:
                 now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
