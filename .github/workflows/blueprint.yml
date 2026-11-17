@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build project
-        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
+        uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee # v1 (2026-11-06)
         with:
           build: true
       - name: Blueprint (PDF, web, checkdecls)
@@ -82,7 +82,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build project
-        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
+        uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee # v1 (2026-11-06)
         with:
           build: true
       - name: Blueprint (PDF, web, checkdecls) and Pages

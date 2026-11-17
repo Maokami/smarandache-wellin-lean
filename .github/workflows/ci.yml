@@ -45,7 +45,7 @@ jobs:
       # propext, Classical.choice, Quot.sound 밖의 공리 (sorryAx, native_decide 의 ofReduceBool, 새 axiom) 를 막는다.
       # axiom-audit-root 는 모듈 접두사다 (기본값 = lakefile 의 라이브러리).
       - name: Build, import check, axiom audit
-        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1 (2026-11-06)
+        uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee # v1 (2026-11-06)
         with:
           build: true
           mk_all-check: true
