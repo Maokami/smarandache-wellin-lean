@@ -665,6 +665,22 @@
   보조정리~\ref{lem:not-dvd-two-five} 로 배제된다.
 \end{proof}
 
+\begin{theorem}[IOR-all 에서 고정된 작은 소인수 회피]
+  \label{thm:avoid-small-primes}
+  \lean{SW.avoid_le_of_intervalOneRunsAll}
+  \leanok
+  \uses{def:interval-one-runs-all, def:W}
+  IOR-all (정의~\ref{def:interval-one-runs-all}) 이 성립하면, 임의의 \(B, N \in \mathbb{N}\) 에 대해
+  \(N < n\) 이고 \(q \le B\) 인 모든 소수 \(q\) 에 대해 \(q \nmid W_n\) 인 \(n\) 이 있다.
+  \(B\), \(N\) 에 추가 하한은 없다 (\(B < 2\) 이면 조건이 공허하다). Lean 에서는 IOR-all 을 명시적 가정으로 받는다.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{thm:finite-avoid-one-runs}
+  \(S = \{q \le B : q \text{ 소수}\}\) 는 원소가 모두 소수인 유한 집합이다.
+  정리~\ref{thm:finite-avoid-one-runs} 를 \(S\) 와 \(N\) 에 적용하면 된다.
+\end{proof}
+
 \section{열린 문제}
 
 \begin{proposition}[Q1, \(|S| \ge 3\)]
