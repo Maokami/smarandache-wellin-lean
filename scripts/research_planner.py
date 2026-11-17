@@ -270,6 +270,7 @@ def main():
             ai = json.loads(Path(args.ai).read_text(encoding="utf-8")) if args.ai else None
             if args.command == "validate":
                 validate(ai, snapshot)
+                Path(args.ai).write_text(json.dumps(ai, ensure_ascii=False, indent=2), encoding="utf-8")
                 print("연구 후보 구조 검사 통과 (수학적 검증 아님)")
             else:
                 now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
